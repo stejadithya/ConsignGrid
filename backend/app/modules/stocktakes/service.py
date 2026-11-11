@@ -219,7 +219,7 @@ def approve(db: Session, actor: User, stocktake_id: int) -> Stocktake:
 
 def _post(db: Session, st: Stocktake, loc: Location, actor: User | None):
     """Post the outcome: sales for sold quantities, losses for missing, gains for surpluses, damaged-stock blocks.
-    actor None: posted by TyreGrow itself (automatic invoicing at the end of the find window)."""
+    actor None: posted by the system itself (automatic invoicing at the end of the find window)."""
     ref = Ref("stocktake", st.id, st.number)
     adj = system_location(db, LocationType.ADJUSTMENT)
     actor_id = actor.id if actor else None
@@ -264,7 +264,7 @@ RESOLVABLE = (StocktakeStatus.AWAITING_RESELLER, StocktakeStatus.RECHECK_REQUEST
 def confirm(db: Session, actor: User | None, stocktake_id: int, decisions: list[Classification], *,
             notes: str | None = None, on_behalf_reason: str | None = None) -> Stocktake:
     """Invoice the tyres not found as sold: the dealer, staff on the dealer's behalf (with a reason), or — actor None —
-    TyreGrow automatically at the end of the find window."""
+    the system automatically at the end of the find window."""
     st = _get(db, stocktake_id, lock=True)
     if actor is not None:
         ensure_reseller_access(actor, st.reseller_id, "Stocktake")
@@ -322,7 +322,7 @@ def confirm(db: Session, actor: User | None, stocktake_id: int, decisions: list[
         st.notes = f"{st.notes}\n{notes}" if st.notes else notes
     db.flush()
     sold = sum(ln.qty_sold for ln in st.lines)
-    who = ("TyreGrow automatically" if actor is None else
+    who = (f"{get_settings().app_display_name} automatically" if actor is None else
            "the dealer" if actor.is_reseller_user else f"{actor.full_name} on the dealer's behalf")
     record_audit(db, actor_id=actor_id, action="stocktake.confirm", entity_type="stocktake", entity_id=st.id,
                  reseller_id=st.reseller_id,

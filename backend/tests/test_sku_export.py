@@ -8,6 +8,7 @@ import pytest
 from openpyxl import load_workbook
 from sqlalchemy import select
 
+from app.core.config import get_settings
 from app.modules.audit.models import AuditEvent
 
 pytestmark = pytest.mark.usefixtures("ledger_balanced")   # every test ends with the ledger reconciled
@@ -18,7 +19,8 @@ LAYOUT = ["SKU Code", "SKU Description", "Brand", "Pattern", "Width (mm)", "Aspe
 
 def _export(world, who):
     r = world.api(who).get("/products/export")
-    assert r.headers["content-disposition"].endswith(f'filename="TyreGrow_SKUs_{date.today().isoformat()}.xlsx"')
+    name = f"{get_settings().file_prefix}_SKUs_{date.today().isoformat()}.xlsx"
+    assert r.headers["content-disposition"].endswith(f'filename="{name}"')
     return r.content
 
 

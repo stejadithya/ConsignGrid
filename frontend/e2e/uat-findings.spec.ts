@@ -173,7 +173,7 @@ test("(5) an existing dealer with two shops, Excel stock and a login; the dealer
   await login(page, RM);
   await page.goto("/resellers?new=1");
   const form = page.getByRole("dialog");
-  await form.getByText("Existing TyreGrow dealer").click();
+  await form.getByText(/^Existing .+ dealer$/).click();
   await form.getByLabel(/^Business name/).fill(`Onboard Tyres ${run}`);
   await form.getByLabel("Contact name").fill("Olive Onboard");
   await form.getByLabel(/^Email/).fill(`onboard-${run.toLowerCase()}@e2e.example.com`);
@@ -228,7 +228,7 @@ test("(6) export all SKUs and import the file again: nothing changes", async ({ 
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Export all SKUs (Excel)" }).click();
   const file = await download;
-  expect(file.suggestedFilename()).toMatch(/^TyreGrow_SKUs_\d{4}-\d{2}-\d{2}\.xlsx$/);
+  expect(file.suggestedFilename()).toMatch(/^[A-Za-z0-9-]+_SKUs_\d{4}-\d{2}-\d{2}\.xlsx$/);
   const path = await file.path();
   await page.getByRole("button", { name: "Import from Excel" }).click();
   const dialog = page.getByRole("dialog", { name: "Import products from Excel" });
@@ -515,7 +515,7 @@ test("(12) report by dealer by SKU loads and downloads", async ({ page }) => {
   await expect(row.getByRole("cell")).toHaveText([/E2E/, new RegExp(f.sku), "4", "4", "0", "0", "2", "2", "0", "2"]);
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download Excel" }).click();
-  expect((await download).suggestedFilename()).toMatch(/^TyreGrow-by-dealer-by-SKU-\d{8}-\d{8}\.xlsx$/);
+  expect((await download).suggestedFilename()).toMatch(/^[A-Za-z0-9-]+-by-dealer-by-SKU-\d{8}-\d{8}\.xlsx$/);
   await expect(page.getByText(/\$\s?\d/)).toHaveCount(0);
 });
 

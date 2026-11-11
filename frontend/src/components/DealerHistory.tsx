@@ -6,6 +6,7 @@ import { useApi } from "@/lib/hooks";
 import type { DealerHistory } from "@/lib/types";
 import { InitialStockCorrections } from "./InitialStockCorrection";
 import { Alert, Badge, Card, DataTable, DefinitionList, Loading, MetricStrip } from "./ui";
+import { branding } from "@/config/branding";
 
 /** How stock first reached the dealer, in plain words. */
 const ARRIVAL: Record<string, string> = {
@@ -29,7 +30,7 @@ export function DealerHistoryTab({ resellerId, canCorrect = false }: { resellerI
     <div className="space-y-4">
       <MetricStrip items={[
         { label: "Onboarded", value: fmtDate(h.onboarded_at), hint: h.onboarded_by ? `Added by ${h.onboarded_by}` : undefined },
-        { label: "Dealer type", value: existing ? "Existing" : "New", hint: existing ? "Joined holding TyreGrow stock" : "Started with no stock" },
+        { label: "Dealer type", value: existing ? "Existing" : "New", hint: existing ? `Joined holding ${branding.companyName} stock` : "Started with no stock" },
         { label: "Tyres sold to date", value: h.units_sold, hint: `${h.sales_count} sale${h.sales_count === 1 ? "" : "s"} (after reversals)` },
         { label: "Last sale", value: h.last_sale ? fmtDate(h.last_sale.sale_date) : "None yet",
           hint: h.last_sale ? `${h.last_sale.number} · ${h.last_sale.units} tyre${h.last_sale.units === 1 ? "" : "s"}` : undefined },

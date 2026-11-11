@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /*
- * TyreGrow design system tokens: the single place to change the product's visual identity.
- * Approved direction: docs/DESIGN_SYSTEM.md. Calm and operational: charcoal on warm off-white; the TyreGrow
+ * Design system tokens: the single place to change the product's visual identity (Brand Pack: see config/branding.ts,
+ * which can override the accent at run time). Approved direction: docs/DESIGN_SYSTEM.md. Calm and operational: charcoal on warm off-white; the
  * yellow is a brand and interaction accent (logo, active navigation, selected state, current step), never a
  * status and never text on white; colour otherwise only carries operational meaning.
  *

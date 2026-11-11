@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from app.core.config import get_settings
 from app.core.errors import BusinessRuleError
 from app.core.permissions import P
 from app.modules.audit.service import record_audit
@@ -59,7 +60,7 @@ def export_products(db: DB, user: Annotated[User, Depends(require(P.CATALOGUE_IM
     record_audit(db, actor_id=user.id, action="product.export", entity_type="product", entity_id=None,
                  summary=f"Exported {len(products)} product(s) to Excel")
     db.commit()
-    name = f"TyreGrow_SKUs_{date.today().isoformat()}.xlsx"
+    name = f"{get_settings().file_prefix}_SKUs_{date.today().isoformat()}.xlsx"
     return Response(content=build_export(products), media_type=XLSX,
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
@@ -123,8 +124,9 @@ class ProductImportIn(BaseModel):
 @router.get("/products/import/template")
 def import_template(_: Importer):
     """The standard blank template every product import uses."""
+    name = f"{get_settings().file_prefix}_SKU_Import_Template.xlsx"
     return Response(content=build_template(), media_type=XLSX,
-                    headers={"Content-Disposition": 'attachment; filename="TyreGrow_SKU_Import_Template.xlsx"'})
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
 @router.post("/products/import")

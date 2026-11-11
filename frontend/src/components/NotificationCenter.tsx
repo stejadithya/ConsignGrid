@@ -16,7 +16,7 @@ import { cx } from "./ui";
 
 const POLL_MS = 20_000;
 const TOAST_MS = 15_000;
-const SOUND_KEY = "tyregrow.notificationSound";
+const SOUND_KEY = "app.notificationSound";
 
 interface Centre {
   unread: number;
@@ -111,7 +111,7 @@ export function NotificationCenter({ children }: { children: ReactNode }) {
       try {
         const top = fresh[0];
         const note = new window.Notification(fresh.length > 1 ? `${top.title} (+${fresh.length - 1} more)` : top.title,
-          { body: top.body ?? undefined, tag: `tyregrow-${top.id}` });
+          { body: top.body ?? undefined, tag: `notification-${top.id}` });
         note.onclick = () => { window.focus(); if (top.link) router.push(top.link); };
       } catch { /* desktop alerts unavailable */ }
     }
@@ -141,7 +141,7 @@ export function NotificationCenter({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [pathname, poll]);
 
-  // "(3) TyreGrow": keep the tab title prefixed while anything is unread (re-applied after page changes).
+  // "(3) <product name>": keep the tab title prefixed while anything is unread (re-applied after page changes).
   useEffect(() => {
     const apply = () => { document.title = titleWithCount(document.title, unread); };
     apply();

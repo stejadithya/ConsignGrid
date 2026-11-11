@@ -96,12 +96,12 @@ _WM: frozenset[P] = frozenset({
 ROLE_PERMISSIONS: dict[Role, frozenset[P]] = {
     # Super user: every permission, including managing other administrators.
     Role.ADMINISTRATOR: frozenset(P),
-    # The Relationship Manager heads TyreGrow: everything the Warehouse Manager can do (built from the same set,
+    # The Relationship Manager heads the business: everything the Warehouse Manager can do (built from the same set,
     # so the two cannot drift apart), plus dealers, prices, sales, invoicing and administration.
     Role.RELATIONSHIP_MANAGER: _WM | frozenset({
         P.RESELLER_WRITE, P.PRICING_WRITE, P.ALLOCATION_WRITE, P.SALES_RECORD, P.SALES_REVERSE,
         P.INVOICE_READ, P.INVOICE_CREATE, P.INVOICE_VOID, P.INVOICE_REFERENCE_READ, P.SETTINGS_MANAGE,
-        # The Relationship Manager owns TyreGrow: user logins, the change history and tester feedback are theirs.
+        # The Relationship Manager owns the system: user logins, the change history and tester feedback are theirs.
         P.USER_MANAGE, P.AUDIT_READ,
         # Correcting a dealer's wrongly entered initial stock is the Relationship Manager's call, not the warehouse's.
         P.INITIAL_STOCK_CORRECT,

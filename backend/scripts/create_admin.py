@@ -1,4 +1,4 @@
-"""Create (or repair) the TyreGrow Administrator — a super user with every permission. Safe on a live database:
+"""Create (or repair) the Administrator — a super user with every permission. Safe on a live database:
 it never deletes or changes any business data.
 
     PILOT_ADMIN_EMAIL=… PILOT_ADMIN_PASSWORD=… python -m scripts.create_admin [--reset-password]
@@ -69,7 +69,7 @@ def create_admin(reset_password: bool = False) -> User:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Create or repair the TyreGrow Administrator account.")
+    parser = argparse.ArgumentParser(description="Create or repair the Administrator account.")
     parser.add_argument("--reset-password", action="store_true", help="replace the password of an existing account")
     create_admin(parser.parse_args().reset_password)
 

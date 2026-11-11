@@ -1,4 +1,4 @@
-"""Product master import from Excel (the TyreGrow SKU template, or the dealer price list layout).
+"""Product master import from Excel (the SKU import template, or the dealer price list layout).
 
 Workflow: `analyse()` reads the workbook and checks every row against the catalogue WITHOUT changing anything;
 `apply()` then creates new SKUs and updates existing ones for the valid rows only, in one transaction.
@@ -11,7 +11,7 @@ Columns (header names are matched case-insensitively; the header row may sit bel
   optional  Brand · Pattern · Width · Aspect Ratio · Rim Diameter · Load Index · Speed Rating · Barcode · Active (Y/N)
 Price columns (Dealer Price, RRP, Cost Price), if present, are ignored: prices are managed in Xero (D2).
 Blank optional size/brand/pattern/load/speed columns are read from the SKU description, e.g.
-"205/55R16 ECODRIVE TL 91H CEAT" → width 205, aspect 55, rim 16, pattern ECODRIVE, load 91, speed H, brand CEAT.
+"205/55R16 ECOTRAIL TL 91H NORDWAY" → width 205, aspect 55, rim 16, pattern ECOTRAIL, load 91, speed H, brand NORDWAY.
 """
 
 import io

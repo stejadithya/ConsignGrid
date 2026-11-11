@@ -41,7 +41,7 @@ export function useProductIndex() {
   }, [all]);
 }
 
-/** "CEAT ECODRIVE 195/65R15 91H" for a SKU or product id; falls back to the SKU while loading or if unknown. */
+/** "NORDWAY ECOTRAIL 195/65R15 91H" for a SKU or product id; falls back to the SKU while loading or if unknown. */
 export function useTyreName() {
   const { byId, bySku } = useProductIndex();
   return (ref: { sku?: string | null; productId?: number | null }) => {

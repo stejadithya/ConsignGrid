@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
+from app.core.config import get_settings
 from app.core.errors import NotFoundError, PermissionDeniedError
 from app.core.permissions import P
 from app.modules.customers.models import Reseller
@@ -125,7 +126,7 @@ def dealer_sku(db: DB, user: Reader, reseller_id: int | None = None, location_id
 def dealer_sku_xlsx(db: DB, user: Reader, reseller_id: int | None = None, location_id: int | None = None,
                     date_from: date | None = None, date_to: date | None = None):
     report = _dealer_sku(db, user, reseller_id, location_id, date_from, date_to)
-    name = f"TyreGrow-by-dealer-by-SKU-{report['date_from']:%Y%m%d}-{report['date_to']:%Y%m%d}.xlsx"
+    name = f"{get_settings().file_prefix}-by-dealer-by-SKU-{report['date_from']:%Y%m%d}-{report['date_to']:%Y%m%d}.xlsx"
     return Response(content=dealer_sku_report.to_xlsx(report),
                     media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})

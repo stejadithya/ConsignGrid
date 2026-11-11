@@ -80,7 +80,7 @@ class Reseller(TimestampMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text)
     # The single system account that groups walk-in cash sales from the warehouse; hidden from reseller lists.
     is_cash_account: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
-    # How the dealer joined (UAT round 2): True = already held TyreGrow stock (recorded as initial stock);
+    # How the dealer joined (UAT round 2): True = already held the supplier's stock (recorded as initial stock);
     # False = new dealer, whose stock comes through stock requests and the warehouse. None = added before this.
     joined_with_stock: Mapped[bool | None] = mapped_column(Boolean)
 

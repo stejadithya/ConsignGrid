@@ -1,6 +1,6 @@
 "use client";
 
-/** Messages from TyreGrow on the dealer dashboard (finding 21): recent order updates, kindly worded. */
+/** Messages from the supplier on the dealer dashboard (finding 21): recent order updates, kindly worded. */
 
 import { MessageCircle } from "lucide-react";
 import Link from "next/link";
@@ -8,13 +8,14 @@ import { fmtDateTime } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 import type { AppNotification } from "@/lib/types";
 import { Card } from "../ui";
+import { branding } from "@/config/branding";
 
 export function DealerMessages({ actions }: { actions?: (n: AppNotification) => React.ReactNode }) {
   const { data } = useApi<AppNotification[]>("/notifications", { limit: 50 });
   const messages = (data ?? []).filter((n) => n.title.startsWith("Update on your order")).slice(0, 5);
   if (!messages.length) return null;
   return (
-    <Card title="Messages from TyreGrow" subtitle="Updates on your orders" padded={false} className="mb-6">
+    <Card title={`Messages from ${branding.companyName}`} subtitle="Updates on your orders" padded={false} className="mb-6">
       <ul className="divide-y divide-line">
         {messages.map((n) => (
           <li key={n.id} className="flex gap-3 px-5 py-3.5">

@@ -102,7 +102,7 @@ class _FakeSMTP:
 def smtp(monkeypatch):
     s = get_settings()
     monkeypatch.setattr(s, "smtp_host", "smtp.example.com")
-    monkeypatch.setattr(s, "smtp_from", "TyreGrow <deliveries@example.com>")
+    monkeypatch.setattr(s, "smtp_from", "Acme Tyres <deliveries@example.com>")
     _FakeSMTP.sent = []
     monkeypatch.setattr("app.modules.delivery_notes.service.smtplib.SMTP", _FakeSMTP)
     return _FakeSMTP

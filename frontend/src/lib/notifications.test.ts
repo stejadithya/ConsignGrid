@@ -19,10 +19,10 @@ describe("notification centre helpers", () => {
   });
 
   it("prefixes the tab title with the unread count", () => {
-    expect(titleWithCount("TyreGrow", 3)).toBe("(3) TyreGrow");
-    expect(titleWithCount("(3) TyreGrow", 5)).toBe("(5) TyreGrow");
-    expect(titleWithCount("(5) TyreGrow", 0)).toBe("TyreGrow");
-    expect(titleWithCount("TyreGrow", 120)).toBe("(99+) TyreGrow");
-    expect(titleWithCount("(99+) TyreGrow", 1)).toBe("(1) TyreGrow");
+    expect(titleWithCount("Acme", 3)).toBe("(3) Acme");
+    expect(titleWithCount("(3) Acme", 5)).toBe("(5) Acme");
+    expect(titleWithCount("(5) Acme", 0)).toBe("Acme");
+    expect(titleWithCount("Acme", 120)).toBe("(99+) Acme");
+    expect(titleWithCount("(99+) Acme", 1)).toBe("(1) Acme");
   });
 });

@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { useApi } from "@/lib/hooks";
 import type { Product } from "@/lib/types";
+import { branding } from "@/config/branding";
 
 interface Demand { product_id: number; awaiting_supply: number; warehouse_available: number }
 interface ConsignmentReport { rows: { product_id: number; on_hand: number }[] }
@@ -67,7 +68,7 @@ export default function ProductsPage() {
           ]} />
           {can("catalogue.create") && <Button variant="primary" onClick={() => setEditing("new")}><Plus aria-hidden />Add product</Button>}
         </>}
-        title="Products" subtitle="Product catalogue: what TyreGrow supplies. A product in the catalogue does not mean stock exists — stock appears only once it is received."
+        title="Products" subtitle={`Product catalogue: what ${branding.companyName} supplies. A product in the catalogue does not mean stock exists — stock appears only once it is received.`}
         actions={<>
           {can("catalogue.import") && (
             <a href={TEMPLATE_URL} download className={cx(buttonClass(), "max-sm:hidden")}>

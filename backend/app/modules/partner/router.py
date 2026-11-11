@@ -44,7 +44,7 @@ class StockItem(BaseModel):
 class StockList(BaseModel):
     generated_at: datetime
     items: list[StockItem]
-    unknown_skus: list[str] = Field(default_factory=list, description="Requested SKUs TyreGrow does not know")
+    unknown_skus: list[str] = Field(default_factory=list, description="Requested SKUs not in the catalogue")
 
 
 @router.get("/partner/v1/stock", response_model=StockList)

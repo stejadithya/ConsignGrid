@@ -1,6 +1,6 @@
 """How a dealer gets their first stock (UAT round 2, journey 3).
 
-A dealer who already held TyreGrow stock when added records it as initial stock. A new dealer's stock comes from
+A dealer who already held the supplier's stock when added records it as initial stock. A new dealer's stock comes from
 the warehouse through a stock request: approval, picking and delivery by the Sales Rep, like any other order.
 """
 

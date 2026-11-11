@@ -266,7 +266,7 @@ function UserMenu({ user }: { user: Me }) {
       )}
       {dialog === "feedback" && <FeedbackDialog onClose={() => setDialog(null)} />}
       {dialog === "password" && (
-        <Modal open title="Change your password" description="Choose a new password for signing in to TyreGrow." onClose={() => setDialog(null)}>
+        <Modal open title="Change your password" description={`Choose a new password for signing in to ${branding.productName}.`} onClose={() => setDialog(null)}>
           <PasswordForm onDone={() => setDialog(null)} />
         </Modal>
       )}

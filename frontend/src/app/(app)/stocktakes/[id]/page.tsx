@@ -16,6 +16,7 @@ import type { Stocktake, StocktakeLine } from "@/lib/types";
 
 interface Contact { role: string; name: string; email: string; phone: string | null }
 import { StocktakeHeader } from "@/components/StocktakeHeader";
+import { branding } from "@/config/branding";
 
 export default function StocktakeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -117,7 +118,7 @@ export default function StocktakeDetailPage() {
           {st.confirmed_on_behalf_reason ? ` ${st.confirmed_on_behalf_reason.startsWith("Automatically") ? st.confirmed_on_behalf_reason : `Confirmed on the dealer's behalf: ${st.confirmed_on_behalf_reason}`}.` : ""}</Alert>
       )}
       {submitted && unclassified > 0 && <Alert tone="warn">{unclassified} line(s) have an unclassified shortage. Classify each shortage as sold (chargeable) or missing (loss) — missing stock is never assumed sold.</Alert>}
-      {st.status === "APPROVED" && <Alert tone="success">{st.total_shortage ? "Confirmed" : "Posted"} by {st.approved_by ?? "TyreGrow (automatically)"} on {fmtDateTime(st.approved_at)}. {st.sale_id ? <Link className="underline" href={`/sales?sale=${st.sale_id}`}>View the resulting sale</Link> : "No sales were confirmed."}</Alert>}
+      {st.status === "APPROVED" && <Alert tone="success">{st.total_shortage ? "Confirmed" : "Posted"} by {st.approved_by ?? `${branding.productName} (automatically)`} on {fmtDateTime(st.approved_at)}. {st.sale_id ? <Link className="underline" href={`/sales?sale=${st.sale_id}`}>View the resulting sale</Link> : "No sales were confirmed."}</Alert>}
       <MetricStrip items={[
         { label: "Expected", value: st.lines.reduce((a, l) => a + (l.expected_qty ?? 0), 0), hint: `${st.lines.length} SKUs` },
         { label: "Counted", value: st.lines.reduce((a, l) => a + l.counted_qty, 0), hint: `${st.lines.reduce((a, l) => a + l.counted_damaged_qty, 0)} damaged` },

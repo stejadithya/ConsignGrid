@@ -1,12 +1,13 @@
 "use client";
 
-/** "Please call me" about an order (finding 21): the dealer or a sales rep asks TyreGrow to call. */
+/** "Please call me" about an order (finding 21): the dealer or a sales rep asks the supplier to call. */
 
 import { PhoneCall } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { useAction } from "@/lib/hooks";
 import { Alert, Button, Field, Input, Modal } from "../ui";
+import { branding } from "@/config/branding";
 
 export function CallMeButton({ requestId, number, size = "sm" }: { requestId: number; number: string; size?: "sm" | "md" }) {
   const [open, setOpen] = useState(false);
@@ -14,7 +15,7 @@ export function CallMeButton({ requestId, number, size = "sm" }: { requestId: nu
   const [when, setWhen] = useState("");
   const [phone, setPhone] = useState("");
   const action = useAction();
-  if (done) return <span className="text-label font-medium text-success">Thanks — TyreGrow will call you.</span>;
+  if (done) return <span className="text-label font-medium text-success">Thanks — {branding.companyName} will call you.</span>;
   return (
     <>
       <Button size={size} onClick={() => setOpen(true)}><PhoneCall aria-hidden />Please call me</Button>

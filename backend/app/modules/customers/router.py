@@ -7,6 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, PermissionDeniedError
 from app.core.permissions import P
 from app.modules.customers import (
@@ -70,8 +71,9 @@ class InitialStockImportIn(BaseModel):
 @router.get("/resellers/initial-stock/template")
 def initial_stock_template(_: InitialStocker):
     """Blank Excel for an existing dealer's initial stock: SKU Code, Quantity, Shop code."""
+    name = f"{get_settings().file_prefix}_Initial_Stock_Template.xlsx"
     return Response(content=initial_stock_import.template(), media_type=XLSX,
-                    headers={"Content-Disposition": 'attachment; filename="TyreGrow_Initial_Stock_Template.xlsx"'})
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
 @router.post("/resellers/{reseller_id}/initial-stock/import")
@@ -213,7 +215,7 @@ def add_location(
 
 
 def _initial_stock_allowed(reseller) -> None:
-    """Initial stock is only for a dealer who already held TyreGrow stock when added (UAT round 2)."""
+    """Initial stock is only for a dealer who already held the supplier's stock when added (UAT round 2)."""
     if reseller.joined_with_stock is False:
         raise BusinessRuleError(f"{reseller.business_name} was added as a new dealer, so their stock comes from the "
                                 "warehouse: create a stock request, which goes for approval and delivery.")

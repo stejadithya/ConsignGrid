@@ -101,7 +101,7 @@ class ResellerBase(BaseModel):
 
 
 class ResellerCreate(ResellerBase):
-    # New dealer (False: stock comes through stock requests) or existing (True: holds TyreGrow stock already).
+    # New dealer (False: stock comes through stock requests) or existing (True: holds the supplier's stock already).
     joined_with_stock: bool | None = None
     # Omitted → generated from the business name and the first shop's city (D4).
     account_ref: str | None = Field(default=None, min_length=1, max_length=30, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$")

@@ -6,13 +6,15 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.datavalidation import DataValidation
 
+from app.core.config import get_settings
+
 # (header, width, required, example, help)
 TEMPLATE_COLUMNS = [
-    ("SKU Code", 14, True, "103671", "Unique product code. Letters, digits, . _ / - (no spaces)."),
-    ("SKU Description", 46, True, "175/65R14 ECODRIVE TL 82T CEAT",
+    ("SKU Code", 14, True, "700001", "Unique product code. Letters, digits, . _ / - (no spaces)."),
+    ("SKU Description", 46, True, "175/65R14 ECOTRAIL TL 82T NORDWAY",
      "Full description. Size, pattern, load/speed and brand are read from it when the optional columns are blank."),
-    ("Brand", 14, False, "CEAT", "Optional — read from the description if blank (last word)."),
-    ("Pattern", 20, False, "ECODRIVE", "Optional — read from the description if blank."),
+    ("Brand", 14, False, "NORDWAY", "Optional — read from the description if blank (last word)."),
+    ("Pattern", 20, False, "ECOTRAIL", "Optional — read from the description if blank."),
     ("Width (mm)", 11, False, 175, "Optional — e.g. 175."),
     ("Aspect Ratio", 12, False, 65, "Optional — e.g. 65."),
     ("Rim Diameter (in)", 14, False, 14, "Optional — e.g. 14 or 17.5."),
@@ -53,12 +55,12 @@ def build_template() -> bytes:
     info.column_dimensions["A"].width = 40
     info.column_dimensions["B"].width = 34
     info.column_dimensions["C"].width = 90
-    info["A1"] = "TyreGrow — Product (SKU) import template"
+    info["A1"] = f"{get_settings().app_display_name} — Product (SKU) import template"
     info["A1"].font = Font(bold=True, size=14)
     lines = [
         "Fill one row per SKU on the 'SKUs' sheet. Keep the header row exactly as it is.",
         "Yellow columns are required. Grey columns are optional.",
-        "Upload the file in TyreGrow: Products → Import products → Check file → Import.",
+        f"Upload the file in {get_settings().app_display_name}: Products → Import products → Check file → Import.",
         "New SKU codes are created; existing SKU codes have their description and details updated.",
         "There are no price columns: prices are managed in Xero. Price columns in older files are ignored.",
         "Tyre size cannot be changed by an import. Rows with errors are skipped and listed before you confirm.",

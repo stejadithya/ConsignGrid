@@ -60,7 +60,7 @@ export function CheckStockPanel({ initialProduct }: { initialProduct?: number })
       <form onSubmit={run} className="flex flex-wrap items-end gap-2" role="search">
         <div className="min-w-60 flex-1">
           <Field label="Tyre" hint="SKU, size, brand or pattern. Matches appear as you type (3 characters or more).">
-            {(id) => <Input id={id} value={text} onChange={(e) => onType(e.target.value)} placeholder="e.g. 103671 or 205 55 16" autoComplete="off" />}
+            {(id) => <Input id={id} value={text} onChange={(e) => onType(e.target.value)} placeholder="e.g. 700001 or 205 55 16" autoComplete="off" />}
           </Field>
         </div>
         <Button type="submit" variant="primary" disabled={!text.trim() || search.busy}><Search aria-hidden />{search.busy ? "Searching…" : "Search"}</Button>

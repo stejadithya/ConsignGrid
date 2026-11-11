@@ -12,6 +12,7 @@ import type { Dashboard, Product, RoleCode, UserOut } from "@/lib/types";
 import { Alert, Badge, Card, EmptyState, IconChip, Loading } from "../ui";
 import { DashboardHeader, plural, RoleBanner, Section } from "./shared";
 import { StockRequestsPanel } from "./StockRequestsPanel";
+import { branding } from "@/config/branding";
 
 interface FeedbackRow { id: number; user_name: string | null; role: string; page: string; feedback_type: string; description: string; created_at: string }
 
@@ -37,7 +38,7 @@ export function AdministratorDashboard() {
 
   return (
     <>
-      <DashboardHeader name={user.full_name} subtitle="Everything across TyreGrow: users, product master, stock, demand and invoicing." />
+      <DashboardHeader name={user.full_name} subtitle={`Everything across ${branding.productName}: users, product master, stock, demand and invoicing.`} />
       <Alert>{error}</Alert>
       {!d && !error && <Loading label="Loading dashboard…" />}
       {d && (

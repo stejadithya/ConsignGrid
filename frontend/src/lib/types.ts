@@ -95,7 +95,7 @@ export interface ResellerSummary {
 }
 
 export interface Reseller extends ResellerSummary {
-  /** true = joined already holding TyreGrow stock; false = new dealer (stock through requests); null = added before 1.12 */
+  /** true = joined already holding the supplier's stock; false = new dealer (stock through requests); null = added before 1.12 */
   joined_with_stock?: boolean | null;
   contact_name: string | null;
   email: string | null;

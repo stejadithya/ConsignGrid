@@ -20,7 +20,7 @@ export function capToasts(toasts: Toast[], max = MAX_TOASTS): { visible: Toast[]
   return { visible: toasts.slice(0, max), more: Math.max(0, toasts.length - max) };
 }
 
-/** "(3) TyreGrow" from "TyreGrow" or "(1) TyreGrow"; the prefix is removed when nothing is unread. */
+/** "(3) Brand" from "Brand" or "(1) Brand"; the prefix is removed when nothing is unread. */
 export function titleWithCount(title: string, unread: number): string {
   const bare = title.replace(/^\(\d+\+?\)\s/, "");
   return unread > 0 ? `(${unread > 99 ? "99+" : unread}) ${bare}` : bare;

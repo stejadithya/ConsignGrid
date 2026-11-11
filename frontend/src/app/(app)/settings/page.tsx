@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
+import { branding } from "@/config/branding";
 
 interface Archive {
   value: number | null; unit: "days" | "months"; delete_after_archive_days: number;
@@ -24,7 +25,7 @@ export default function SettingsPage() {
   if (!can("settings.manage")) return <Alert>Settings are for Relationship Managers and Administrators.</Alert>;
   return (
     <>
-      <PageHeader eyebrow="System" title="Settings" subtitle="Settings that apply to everyone using TyreGrow." />
+      <PageHeader eyebrow="System" title="Settings" subtitle={`Settings that apply to everyone using ${branding.productName}.`} />
       <PhotoArchiving />
     </>
   );

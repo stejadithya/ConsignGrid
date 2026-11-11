@@ -438,7 +438,7 @@ def hand_back(db: Session, actor: User, request_id: int, note: str | None) -> St
 
 
 def request_callback(db: Session, actor: User, request_id: int, preferred_time: str, phone: str) -> StockRequest:
-    """The dealer (own request) or a sales rep asks TyreGrow to call about an order (finding 21)."""
+    """The dealer (own request) or a sales rep asks the supplier to call about an order (finding 21)."""
     if not actor.is_reseller_user and actor.role != Role.SALES_REP:
         raise PermissionDeniedError("Only the dealer or a sales representative can ask for a call")
     sr = get_scoped(db, actor, request_id)   # a dealer can only reach their own requests (404 otherwise)

@@ -7,6 +7,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError
 from app.core.numbering import next_number
 from app.core.permissions import ROLE_LABELS, Role
@@ -25,7 +26,7 @@ from app.modules.replenishment import service as replenishment
 from app.modules.replenishment.models import ReplenishmentRequest
 from app.modules.sales.models import ConsignmentSale, ConsignmentSaleLine, InvoiceStatus, SaleSource
 
-# Sales of tyres without a price snapshot 0.00: TyreGrow counts tyres; Xero holds the prices (D2).
+# Sales of tyres without a price snapshot 0.00: the platform counts units; the accounting system holds the prices (D2).
 NOT_PRICED = Decimal("0.00")
 
 
@@ -55,7 +56,7 @@ def record_sale(
     if location is None or location.type != LocationType.CONSIGNMENT:
         raise BusinessRuleError("Sales are recorded against a dealer consignment location")
     # Reseller users may only report sales for their own locations, at agreed prices (no manual overrides).
-    # actor None: recorded by TyreGrow itself (a stock check invoiced automatically, release 1.11).
+    # actor None: recorded by the system itself (a stock check invoiced automatically, release 1.11).
     if actor is not None:
         ensure_reseller_access(actor, location.reseller_id, "Location")
     if actor is not None and actor.is_reseller_user:
@@ -212,7 +213,8 @@ def _notify_replacements(db: Session, actor: User | None, reseller: Reseller, sa
     """Tell the warehouse, relationship managers and the reseller's sales rep that replacements were raised."""
     skus = {p.id: p.tyre_label for p in db.execute(
         select(Product).where(Product.id.in_([r.product_id for r in raised]))).scalars()}
-    who = f"{actor.full_name} ({ROLE_LABELS[Role(actor.role)]})" if actor else "TyreGrow (automatically)"
+    who = (f"{actor.full_name} ({ROLE_LABELS[Role(actor.role)]})" if actor
+           else f"{get_settings().app_display_name} (automatically)")
     detail = ", ".join(f"{r.qty_required} × {skus.get(r.product_id)} ({r.number})" for r in raised)
     recipients = [*staff_in_roles(db, Role.WAREHOUSE_MANAGER, Role.RELATIONSHIP_MANAGER), reseller.sales_rep_user_id]
     title = f"Replacement raised for {reseller.business_name}"

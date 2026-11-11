@@ -1,8 +1,17 @@
-# TyreGrow
+# ConsignGrid
 
-B2B consignment inventory management for a tyre dealership that supplies 30+ reseller customers from a central warehouse. The dealership keeps ownership of consignment stock, invoices resellers only for confirmed sales, replenishes their stock separately, and can move unsold stock between resellers with a replacement obligation to the reseller that supplied it.
+White-label B2B consignment inventory platform: a supplier keeps ownership of stock held at dealers, hospitals,
+stores or job sites, invoices only what is sold, used or missing, replenishes partners to agreed targets, and moves
+stock between partners. Configurable per customer (brand, industry vocabulary, item attributes, rules) from one
+codebase.
 
-> "TyreGrow" is the company / product display name. It is configured in `frontend/src/config/branding.ts` and `APP_DISPLAY_NAME`, and appears in no table name, API path or identifier.
+> **ConsignGrid is a working name.** Every customer-visible name, logo, colour and word is configuration — see the
+> [customer playbook](docs/whitelabel/04_CUSTOMER_PLAYBOOK.md). Plan and progress: [`docs/whitelabel/`](docs/whitelabel)
+> ([master plan](docs/whitelabel/01_MASTER_PLAN.md) · [industry analysis](docs/whitelabel/02_INDUSTRY_ANALYSIS.md) ·
+> [go-to-market](docs/whitelabel/03_GO_TO_MARKET.md) · [progress](docs/whitelabel/PROGRESS.md)).
+>
+> Built from TyreGrow 1.11.0 (a tyre distributor supplying 30+ dealers in New Zealand). The tyre industry pack is
+> still the default, so the platform behaves exactly like that release until another pack is chosen.
 
 ## What is in the box
 

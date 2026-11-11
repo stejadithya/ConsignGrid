@@ -86,7 +86,7 @@ def create_invoice(db: Session, actor: User | None, *, reseller_id: int, sale_li
         subtotal=Decimal("0"), tax_total=Decimal("0"), total=Decimal("0"),
         bill_to_name=reseller.business_name, bill_to_account_ref=reseller.account_ref,
         bill_to_address=reseller.billing_address, bill_to_tax_number=reseller.tax_number,
-        notes=notes, created_by_user_id=actor.id if actor else None,   # None: created by TyreGrow itself
+        notes=notes, created_by_user_id=actor.id if actor else None,   # None: created by the system itself
     )
     db.add(inv)
     db.flush()

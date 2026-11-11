@@ -148,7 +148,7 @@ def test_allocation_only_for_consignment_locations(world):
 def test_user_management_admin_only(world):
     data = {"email": "new@example.com", "full_name": "New Person", "password": "long-enough-pw",
             "role": "SALES_REP"}
-    # The Relationship Manager owns TyreGrow and administers users; the Warehouse Manager does not.
+    # The Relationship Manager owns the system and administers users; the Warehouse Manager does not.
     world.api(world.warehouse_op).post("/users", data, expected=403)
     world.api(world.rep).post("/users", data, expected=403)
     world.api(world.user_a).post("/users", data, expected=403)

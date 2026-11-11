@@ -1,5 +1,5 @@
-"""Release 1.11, finding 5 / D2: TyreGrow counts tyres and Xero holds prices. Sales of unpriced tyres succeed and
-the product import works without price columns."""
+"""Release 1.11, finding 5 / D2: the platform counts tyres and the accounting system holds prices. Sales of unpriced tyres
+succeed and the product import works without price columns."""
 
 import base64
 import io

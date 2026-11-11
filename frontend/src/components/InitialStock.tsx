@@ -7,6 +7,7 @@ import { useAction } from "@/lib/hooks";
 import type { Reseller } from "@/lib/types";
 import { ProductSelect, shopText } from "./pickers";
 import { Alert, Badge, Button, DataTable, Field, Input, Modal, ProductCell, Select, Tabs, Textarea } from "./ui";
+import { branding } from "@/config/branding";
 
 export interface StockLine { product: number | ""; qty: string }
 
@@ -115,7 +116,7 @@ export function InitialStockModal({ reseller, onClose, onDone }: { reseller: Res
         onClick={async () => { if (await action.run(() => importInitialStock(reseller.id, file!, true))) onDone(); }}>{action.busy ? "Importing…" : `Import ${check.summary.units} tyre(s)`}</Button>;
   return (
     <Modal open wide title="Initial stock (backorder)" onClose={onClose}
-      description={`Tyres ${reseller.business_name} already holds from TyreGrow, recorded once when they join the system. They become this dealer's consignment stock.`}
+      description={`Tyres ${reseller.business_name} already holds from ${branding.companyName}, recorded once when they join the system. They become this dealer's consignment stock.`}
       footer={<><Button onClick={onClose}>Cancel</Button>
         {mode === "excel" ? excelFooter : <Button variant="primary" disabled={!ready || action.busy}
           onClick={async () => { if (await action.run(() => postInitialStock(reseller.id, Number(location), lines, notes))) onDone(); }}>

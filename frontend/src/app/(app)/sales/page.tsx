@@ -16,6 +16,7 @@ import { fmtDate, humanize, todayIso } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import { BILLING_LABEL, billingState, billingTrack, NON_CONSIGNMENT_LABEL, nextStep, replacementLabel, saleSourceLabel, stockTrack } from "@/lib/saleJourney";
 import type { Sale, SaleLine, Stocktake } from "@/lib/types";
+import { branding } from "@/config/branding";
 
 export default function SalesPage() {
   const params = useSearchParams();
@@ -52,7 +53,7 @@ export default function SalesPage() {
           : isReseller
             ? <>Thanks, {created.lines.flatMap((l) => l.replenishment).length
                 ? <>your replacement tyres are being arranged ({created.lines.flatMap((l) => l.replenishment).map((r, i) => <span key={r.id}>{i > 0 && ", "}<Link className="underline" href={`/replenishment/${r.id}`}>{r.number}</Link></span>)}).</>
-                : "your sale is recorded."} TyreGrow will invoice you through Xero.</>
+                : "your sale is recorded."} {branding.companyName} will invoice you through Xero.</>
           : created.lines.flatMap((l) => l.replenishment).length
             ? <>Replenishment raised: {created.lines.flatMap((l) => l.replenishment).map((r) => <Link key={r.id} className="underline" href={`/replenishment/${r.id}`}>{r.number} ({r.qty_required}, {humanize(r.status)}) </Link>)}</>
             : "No replenishment raised (auto-replenish off, or target already covered)."}
@@ -144,7 +145,7 @@ function RecordSaleModal({ onClose, onDone }: { onClose: () => void; onDone: (s:
       footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" disabled={action.busy || !effectiveLocation || !lines.some((l) => l.product)} onClick={submit}>{action.busy ? "Recording…" : isReseller ? "Report sale" : "Record sale"}</Button></>}>
       <Alert>{action.error}</Alert>
       <Alert tone="info">{isReseller
-        ? "Report tyres you have sold to your customers. Replacement stock is arranged automatically, and TyreGrow invoices you through Xero."
+        ? `Report tyres you have sold to your customers. Replacement stock is arranged automatically, and ${branding.companyName} invoices you through Xero.`
         : cash ? "Non-consignment sale: a customer (a nearby shop or any dealer) buys and pays at the warehouse. Stock leaves the warehouse now, nothing is replaced, and an invoice record is created to complete in Xero."
         : "Only confirmed sales belong here. Missing stock found during a count should go through a stocktake — it is never assumed sold."}</Alert>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

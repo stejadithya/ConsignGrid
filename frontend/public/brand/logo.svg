@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="218" viewBox="0 0 960 218" role="img" aria-label="ConsignGrid">
+  <!-- Placeholder wordmark. Replace per customer (see docs/whitelabel/04_CUSTOMER_PLAYBOOK.md). -->
+  <rect x="8" y="17" width="184" height="184" rx="40" fill="#1c1c1e"/>
+  <g fill="#ffd400">
+    <rect x="44" y="53" width="48" height="48" rx="10"/>
+    <rect x="108" y="53" width="48" height="48" rx="10"/>
+    <rect x="44" y="117" width="48" height="48" rx="10"/>
+    <rect x="108" y="117" width="48" height="48" rx="10" fill-opacity="0.35"/>
+  </g>
+  <text x="228" y="146" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="104" font-weight="700" letter-spacing="-3" fill="#1c1c1e">ConsignGrid</text>
+</svg>

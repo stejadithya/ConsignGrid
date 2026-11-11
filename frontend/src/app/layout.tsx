@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { branding } from "@/config/branding";
+import { accentStyle, branding } from "@/config/branding";
 import { AuthProvider } from "@/lib/auth";
 
 // Inter (variable, 100–900), self-hosted: subset to Latin incl. Māori macrons and the symbols the app uses.
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} style={accentStyle() as React.CSSProperties}>
       <body>
         <AuthProvider>{children}</AuthProvider>
       </body>

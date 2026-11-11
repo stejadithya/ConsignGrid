@@ -3,6 +3,7 @@ waiting approvals move to a colleague with the same role; nobody is deactivated 
 
 import pytest
 
+from app.core.config import get_settings
 from app.core.permissions import Role
 from app.modules.customers.models import Reseller
 from tests.factories import APPROVAL, HANDOVER, make_user, set_stock
@@ -50,7 +51,8 @@ def test_a_full_takeover_moves_everything_and_deactivates_the_leaver(world):
     # Everyone is told.
     titles = [n["title"] for n in world.api(new_rep).get("/notifications").json()]
     assert "You now look after 2 dealer(s): Alpha Tyres, Bravo Auto" in titles
-    assert "Your TyreGrow sales rep is now Nova Rep" in [n["title"] for n in world.api(world.user_a).get("/notifications").json()]
+    titles = [n["title"] for n in world.api(world.user_a).get("/notifications").json()]
+    assert f"Your {get_settings().company_name} sales rep is now Nova Rep" in titles
     # The new rep can confirm the moved delivery; the old rep cannot sign in.
     world.api(new_rep).post(f"/replenishment/deliveries/{d['id']}/receive", HANDOVER)
     assert world.client.post("/api/auth/login", json={"email": "rep@example.com", "password": "x" * 12}).status_code in (401, 403)

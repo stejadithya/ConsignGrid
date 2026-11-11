@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, NotFoundError
 from app.core.permissions import ROLE_LABELS, Role
 from app.modules.audit.service import record_audit
@@ -135,7 +136,8 @@ def handover(db: Session, actor: User, from_user_id: int, *, to_user_id: int, re
                      f"Handed over by {actor.full_name} from {leaver.full_name}.", link="/resellers", exclude=actor.id)
         if taker.role == Role.SALES_REP:
             for r in moved.dealers:
-                notify_users(db, reseller_users(db, r.id), f"Your TyreGrow sales rep is now {taker.full_name}",
+                company = get_settings().company_name
+                notify_users(db, reseller_users(db, r.id), f"Your {company} sales rep is now {taker.full_name}",
                              f"{taker.full_name} · {taker.email}" + (f" · {taker.phone}" if taker.phone else ""),
                              link="/", entity_type="reseller", entity_id=r.id)
     other = len(moved.deliveries) + len(moved.transfers) + len(moved.stock_requests) + len(moved.replenishments)

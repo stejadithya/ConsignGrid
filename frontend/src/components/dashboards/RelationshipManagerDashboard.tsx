@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
-import { uiConfig } from "@/config/branding";
+import { branding, uiConfig } from "@/config/branding";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, todayIso } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
@@ -24,7 +24,7 @@ import {
 import { StockCheckAlerts } from "./StockCheckAlerts";
 import { StockCheckSchedule } from "../StockCheckSchedule";
 
-/** The owner's view of TyreGrow: money, decisions waiting, how each dealer is doing, and what needs attention. */
+/** The owner's view of the business: money, decisions waiting, how each dealer is doing, and what needs attention. */
 export function RelationshipManagerDashboard() {
   const { user, can } = useAuth();
   const { data: d, error } = useApi<Dashboard>("/reports/dashboard");
@@ -69,7 +69,7 @@ export function RelationshipManagerDashboard() {
 
   return (
     <>
-      <DashboardHeader name={user.full_name} subtitle="How TyreGrow is doing today: money, decisions waiting for you and your dealers."
+      <DashboardHeader name={user.full_name} subtitle={`How ${branding.companyName} is doing today: money, decisions waiting for you and your dealers.`}
         actions={<>
           {can("transfer.request") && <CheckStockButton />}
           {can("catalogue.import") && <a href={EXPORT_URL} download title="Edit or add rows, then use Import from Excel."

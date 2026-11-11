@@ -17,6 +17,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Reseller, ResellerSummary, Stocktake, UserOut } from "@/lib/types";
+import { branding } from "@/config/branding";
 
 interface ConsRow { reseller_id: number; on_hand: number }
 interface BackRow { reseller_id: number; qty_outstanding: number; qty_awaiting_supply: number }
@@ -134,7 +135,7 @@ function NewResellerModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const [shops, setShops] = useState<Shop[]>([blankShop()]);
   const setShop = (i: number, k: keyof Shop) => (e: { target: { value: string } }) =>
     setShops((all) => all.map((s, j) => (j === i ? { ...s, [k]: e.target.value } : s)));
-  const [existing, setExisting] = useState(false);   // already trading with TyreGrow and holding stock
+  const [existing, setExisting] = useState(false);   // already trading with the supplier and holding stock
   const [lines, setLines] = useState<StockLine[]>(blankLines);
   const [stockMode, setStockMode] = useState("enter");
   const [stockFile, setStockFile] = useState<File | null>(null);
@@ -142,7 +143,7 @@ function NewResellerModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const [created, setCreated] = useState<Reseller | null>(null);
   const action = useAction();
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
-  // The account reference is created by TyreGrow (D4); show what it will be as the name and city are typed.
+  // The account reference is created by the system (D4); show what it will be as the name and city are typed.
   const [preview, setPreview] = useState<string | null>(null);
   const firstCity = shops[0].city.trim();
   useEffect(() => {
@@ -198,9 +199,9 @@ function NewResellerModal({ onClose, onCreated }: { onClose: () => void; onCreat
         {created && <Alert tone="warn">{created.business_name} was created, but the stock or agreement copy was not saved. Add it from the dealer&apos;s page
           (<button type="button" className="underline" onClick={() => onCreated(created.id)}>open {created.business_name}</button>).</Alert>}
         <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2" disabled={!!created}>
-          <legend className="mb-1.5 text-label font-medium text-ink">Is this dealer already trading with TyreGrow?</legend>
-          {[{ v: false, t: "New dealer", d: "Starting with TyreGrow now. Their first order goes to the warehouse for approval, then the Sales Rep delivers it." },
-            { v: true, t: "Existing TyreGrow dealer", d: "Already holds stock TyreGrow supplied; record it as their initial stock." }].map((o) => (
+          <legend className="mb-1.5 text-label font-medium text-ink">Is this dealer already trading with {branding.companyName}?</legend>
+          {[{ v: false, t: "New dealer", d: `Starting with ${branding.companyName} now. Their first order goes to the warehouse for approval, then the Sales Rep delivers it.` },
+            { v: true, t: `Existing ${branding.companyName} dealer`, d: `Already holds stock ${branding.companyName} supplied; record it as their initial stock.` }].map((o) => (
             <label key={o.t} className={`flex cursor-pointer gap-2.5 rounded-control border p-3 ${existing === o.v ? "border-ink bg-subtle" : "border-line"}`}>
               <input type="radio" name="existing" className="mt-0.5 size-4 accent-ink" checked={existing === o.v} onChange={() => setExisting(o.v)} />
               <span><span className="block text-body font-medium">{o.t}</span><span className="block text-caption text-ink-muted">{o.d}</span></span>

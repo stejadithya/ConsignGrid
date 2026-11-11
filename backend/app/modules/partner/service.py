@@ -89,7 +89,7 @@ def stock_statuses(db: Session, low_threshold: int, skus: list[str] | None = Non
     """Warehouse status bands per SKU (available = on hand − reserved − blocked, over active warehouse locations).
 
     Without `skus`: every active product. With `skus`: those products, active or not (inactive ones are OUT), plus
-    the SKUs TyreGrow does not know.
+    the SKUs the catalogue does not know.
     """
     available = (
         select(StockBalance.product_id,

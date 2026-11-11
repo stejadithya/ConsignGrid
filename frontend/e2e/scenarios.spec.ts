@@ -272,11 +272,11 @@ test("Scenario 6 — existing reseller with initial stock, cash sale, shipping w
   const f = await setup({ tag: "S6", resellerStock: 0, warehouseStock: 10 });
   const run = Date.now().toString(36).toUpperCase();
 
-  // The relationship manager adds an existing TyreGrow reseller together with the stock they hold today.
+  // The relationship manager adds an existing reseller together with the stock they hold today.
   await login(page, RM);
   await page.goto("/resellers?new=1");
   const form = page.getByRole("dialog");
-  await form.getByText("Existing TyreGrow dealer").click();
+  await form.getByText(/^Existing .+ dealer$/).click();
   await form.getByLabel(/^Business name/).fill(`Existing Tyres ${run}`);   // the account reference is generated (D4)
   await form.getByLabel("Contact name").fill("Eve Existing");
   await form.getByLabel(/^Email/).fill(`ex-${run.toLowerCase()}@e2e.example.com`);
