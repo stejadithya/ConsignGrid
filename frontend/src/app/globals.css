@@ -1,0 +1,246 @@
+@import "tailwindcss";
+
+/*
+ * TyreGrow design system tokens: the single place to change the product's visual identity.
+ * Approved direction: docs/DESIGN_SYSTEM.md. Calm and operational: charcoal on warm off-white; the TyreGrow
+ * yellow is a brand and interaction accent (logo, active navigation, selected state, current step), never a
+ * status and never text on white; colour otherwise only carries operational meaning.
+ *
+ * Tailwind turns each token into utilities: bg-canvas, text-ink-secondary, border-control, text-display,
+ * h-control-lg, max-w-content, rounded-card, shadow-card, etc.
+ */
+@theme {
+  /* ── Typography ───────────────────────────────────────────── */
+  /* Inter, self-hosted (src/app/fonts, loaded in layout.tsx); system fonts only as a fallback. */
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Weights: 400 body · 500 labels, data · 600 headings, buttons, KPIs · 700 page headings. Nothing else. */
+
+  --text-display: 1.75rem;                   /* 28px page heading (desktop) */
+  --text-display--line-height: 2.25rem;
+  --text-display--letter-spacing: -0.02em;
+  --text-display-compact: 1.5rem;            /* 24px page heading (mobile) */
+  --text-display-compact--line-height: 2rem;
+  --text-display-compact--letter-spacing: -0.02em;
+  --text-heading: 1.125rem;                  /* 18px section heading */
+  --text-heading--line-height: 1.625rem;
+  --text-heading--letter-spacing: -0.01em;
+  --text-subheading: 1rem;                   /* 16px card title */
+  --text-subheading--line-height: 1.5rem;
+  --text-metric: 1.875rem;                   /* 30px KPI number (desktop) */
+  --text-metric--line-height: 2.25rem;
+  --text-metric--letter-spacing: -0.02em;
+  --text-metric-compact: 1.5rem;             /* 24px KPI number (mobile) */
+  --text-metric-compact--line-height: 2rem;
+  --text-metric-compact--letter-spacing: -0.02em;
+  --text-body: 0.875rem;                     /* 14px app text and tables */
+  --text-body--line-height: 1.25rem;
+  --text-body-lg: 1rem;                      /* 16px forms, mobile inputs, warehouse screens */
+  --text-body-lg--line-height: 1.5rem;
+  --text-label: 0.8125rem;                   /* 13px form labels, table headers */
+  --text-label--line-height: 1.125rem;
+  --text-caption: 0.75rem;                   /* 12px badges and metadata: the smallest size allowed */
+  --text-caption--line-height: 1rem;
+  --text-button: 0.875rem;                   /* 14px */
+  --text-button--line-height: 1.25rem;
+  --text-button-lg: 1rem;                    /* 16px large and touch buttons */
+  --text-button-lg--line-height: 1.5rem;
+
+  /* ── Neutrals ─────────────────────────────────────────────── */
+  --color-canvas: #f8f8f5;                   /* page background */
+  --color-surface: #ffffff;                  /* cards */
+  --color-subtle: #f3f2ee;                   /* table headers, hover, quiet panels */
+  --color-line: #e4e3df;                     /* dividers and card borders (decorative) */
+  --color-line-strong: #d6d4ce;              /* stronger dividers */
+  --color-control: #8e8c86;                  /* input, select and checkbox borders: 3.4:1 on white */
+
+  --color-ink: #1c1c1e;                      /* text and charcoal surfaces: 17:1 */
+  --color-ink-hover: #2e2e33;
+  --color-ink-secondary: #68676f;            /* secondary text: 5.6:1 */
+  --color-ink-muted: #737279;                /* captions and metadata on white: 4.8:1 */
+  --color-ink-disabled: #a3a1a8;             /* disabled controls only (placeholders use ink-muted: they carry hints) */
+
+  /* ── Brand: an accent, never a status, never text on white ── */
+  --color-brand: #ffd400;                    /* fills, always with ink text on top (11.9:1) */
+  --color-brand-hover: #ffe14a;
+  --color-brand-soft: #fff8d6;               /* selected row or navigation tint */
+  --color-brand-text: #806b00;               /* yellow-family text or icons on white: 5.2:1 */
+
+  /* ── Status: colour only for operational meaning, always with a label or icon ── */
+  --color-success: #16803c;                  /* complete, approved, on target */
+  --color-success-soft: #edf7ef;
+  --color-success-line: #bbe5c8;
+  --color-warning: #8f5600;                  /* needs attention, below target, due */
+  --color-warning-soft: #fff7de;
+  --color-warning-line: #f3d9a0;
+  --color-danger: #c6372c;                   /* critical, out of stock, failed */
+  --color-danger-soft: #fff1f0;
+  --color-danger-line: #f5c6c1;
+  --color-danger-hover: #a52a20;
+  --color-info: #2c6ab3;                     /* informational, in transit, processing */
+  --color-info-soft: #eff6ff;
+  --color-info-line: #c3d7f7;
+  --color-neutral: #68676f;                  /* waiting, draft, closed */
+  --color-neutral-soft: #f1f0ec;
+  --color-neutral-line: #e4e3df;
+
+  /* ── Spacing, sizes, layout (4px grid: 4 8 12 16 20 24 32 40 48 = Tailwind 1 2 3 4 5 6 8 10 12) ── */
+  --spacing-control-sm: 2rem;                /* 32px */
+  --spacing-control-md: 2.25rem;             /* 36px */
+  --spacing-control-lg: 2.75rem;             /* 44px: the minimum on touch and warehouse screens */
+  --spacing-row: 2.75rem;                    /* 44px table row */
+  --spacing-row-compact: 2.5rem;             /* 40px */
+  --spacing-row-comfortable: 3.25rem;        /* 52px: comfortable density on touch screens (warehouse) */
+  --container-content: 90rem;                /* 1440px max content width */
+
+  --radius-control: 0.5rem;                  /* 8px */
+  --radius-card: 0.75rem;                    /* 12px */
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgb(28 28 30 / 0.04);
+  --shadow-raised: 0 1px 2px rgb(28 28 30 / 0.05), 0 4px 12px rgb(28 28 30 / 0.05);
+  --shadow-pop: 0 8px 30px rgb(28 28 30 / 0.12), 0 2px 6px rgb(28 28 30 / 0.06);
+
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
+  @keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+}
+
+/* Responsive layout values: page gutter 16 / 24 / 32px, card padding 16 / 20px.
+   --action-bar-height: height of a sticky mobile action bar when a page shows one (0 otherwise); phone notifications sit above it. */
+:root {
+  --page-gutter: 1rem;
+  --card-padding: 1rem;
+  --action-bar-height: 0px;
+}
+@media (min-width: 40rem) {
+  :root { --page-gutter: 1.5rem; }
+}
+@media (min-width: 64rem) {
+  :root { --page-gutter: 2rem; --card-padding: 1.25rem; }
+}
+
+html {
+  color-scheme: light;
+  /* Keyboard focus and "scroll into view" keep the focused field clear of a sticky action bar. */
+  scroll-padding-bottom: calc(var(--action-bar-height) + 0.75rem);
+}
+
+/* Native checkboxes and radios take the charcoal accent everywhere, styled or not. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-ink);
+}
+
+body {
+  @apply bg-canvas font-sans text-body text-ink antialiased;
+}
+
+/* Tabular numbers keep quantity columns aligned. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Page gutter and card padding that follow the screen size. */
+@utility px-page {
+  padding-inline: var(--page-gutter);
+}
+@utility p-card {
+  padding: var(--card-padding);
+}
+@utility px-card {
+  padding-inline: var(--card-padding);
+}
+
+/* Identifiers: SKU codes, account references, document numbers. Inter, not monospace: equal-width digits and a
+   slashed zero so 0 and O, and long numbers, stay readable. */
+@utility sku {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* Tyre sizes and quantities that are compared down a column. */
+@utility data {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Docked to the bottom of a phone screen: above a sticky action bar (if any) and the iPhone home indicator. */
+@utility bottom-dock {
+  /* The bar's own height already includes the safe area. */
+  bottom: calc(max(var(--action-bar-height), env(safe-area-inset-bottom)) + 0.75rem);
+}
+
+/* Card label of a table cell in card mode (phones): drawn from data-label so it adds no text to the cell (desktop
+   text, copy and tests are unchanged), with empty alternative text so screen readers, which already have the column
+   header, do not read it twice. */
+@utility card-label {
+  @media (width < 40rem) {
+    &::before {
+      content: attr(data-label) / "";
+      flex-shrink: 0;
+      font-size: var(--text-label);
+      line-height: var(--text-label--line-height);
+      color: var(--color-ink-secondary);
+    }
+  }
+}
+
+/* Touch area: on touch screens the control answers taps across at least 44 × 44px, centred on it, while it keeps its
+   compact look. An invisible pseudo-element, so no extra markup and nothing for screen readers. Use it on a positioned
+   control (add `relative` unless it is already absolute or fixed) that does not clip its own overflow. */
+@utility touch-target {
+  @media (pointer: coarse) {
+    &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, 2.75rem);
+      height: max(100%, 2.75rem);
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
+/* Keyboard focus: a charcoal outline that is visible on every background (yellow alone fails 3:1 on white). */
+@utility focus-ring {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+/* Inline links inside tables and text: dark, with the brand yellow as the underline accent. */
+@utility link {
+  @apply font-medium whitespace-nowrap text-ink underline decoration-line-strong decoration-1 underline-offset-4 transition-colors hover:decoration-brand hover:decoration-2;
+}
+
+::selection {
+  background: var(--color-brand-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}
+
+/* A thin, always-visible scrollbar for areas that scroll sideways (tables, tab rows), so it is clear that there is more
+   (touch browsers that hide scrollbars still get the arrow cues drawn by the components). */
+@utility scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-control) transparent;
+  &::-webkit-scrollbar { height: 6px; }
+  &::-webkit-scrollbar-thumb { background: var(--color-control); border-radius: 9999px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+}

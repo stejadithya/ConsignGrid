@@ -1,0 +1,39 @@
+[project]
+name = "consignment-backend"
+version = "1.11.0"
+requires-python = ">=3.11"
+# Runtime dependencies. Keep in sync with requirements.txt (Vercel installs from this file).
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "openpyxl>=3.1,<4",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy>=2.0.30,<2.1",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.3",
+    "email-validator>=2.1",
+    "pyjwt>=2.8",
+    "bcrypt>=4.1",
+    "fpdf2>=2.8,<3",
+    "tzdata>=2024.1",
+]
+
+# This is an application, not a library: install its dependencies only, never package the source tree.
+[tool.uv]
+package = false
+
+[tool.setuptools]
+packages = []
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]

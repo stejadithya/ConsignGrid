@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/proofs/retention/cron", "schedule": "15 3 * * *" },
+    { "path": "/api/stocktakes/auto-invoice/cron", "schedule": "5 4 * * *" }
+  ]
+}

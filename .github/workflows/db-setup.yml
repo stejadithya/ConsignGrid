@@ -1,0 +1,105 @@
+# Run from GitHub: Actions → "Database setup" → Run workflow.
+# Always applies database migrations (safe, keeps all data) to the database in the DATABASE_URL_UNPOOLED
+# repository secret. Optional steps:
+#   - create_admin: create/repair the Administrator from the PILOT_ADMIN_* secrets (keeps all data)
+#   - import_skus:  import backend/data/products/sample-tyre-catalogue.xlsx (products only)
+#   - pilot_reset:  ONE-TIME reset to a clean pilot state, which DELETES ALL operational data and users.
+#   - uat_reset:    clean for UAT: KEEPS users, dealers, dealer prices and SKUs; DELETES all orders, stock and
+#                   history; then puts 10 of every active SKU in the warehouse. Type CLEAN-FOR-UAT to run it;
+#                   type PREVIEW to only list what would be kept and deleted.
+# Deployments never run these; they only happen when you choose them here.
+name: Database setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_admin:
+        description: "Create the Administrator (super user) from the PILOT_ADMIN_* secrets — keeps all data"
+        type: boolean
+        default: false
+      import_skus:
+        description: "Import the SKUs from the July 2026 dealer price list into Products — products only, no stock"
+        type: boolean
+        default: false
+      pilot_reset:
+        description: "DANGER: type RESET-PILOT to delete ALL data and create the pilot accounts (leave empty to only migrate)"
+        type: string
+        default: ""
+      uat_reset:
+        description: "DANGER: type CLEAN-FOR-UAT to delete all orders/stock/history (keeps users, dealers, SKUs) and put 10 of each SKU in the warehouse. Type PREVIEW to see what would happen."
+        type: string
+        default: ""
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+      APP_ENV: development
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Check secret
+        run: test -n "$DATABASE_URL" || (echo "Add the DATABASE_URL_UNPOOLED repository secret first" && exit 1)
+      - name: Apply migrations
+        run: alembic upgrade head
+      - name: Show current contents
+        run: python -m scripts.reset_to_pilot --dry-run
+      - name: Reset to clean pilot state
+        if: ${{ inputs.pilot_reset != '' }}
+        env:
+          CONFIRM: ${{ inputs.pilot_reset }}
+          PILOT_ADMIN_EMAIL: ${{ secrets.PILOT_ADMIN_EMAIL }}
+          PILOT_ADMIN_NAME: ${{ secrets.PILOT_ADMIN_NAME }}
+          PILOT_ADMIN_PASSWORD: ${{ secrets.PILOT_ADMIN_PASSWORD }}
+          PILOT_RM_EMAIL: ${{ secrets.PILOT_RM_EMAIL }}
+          PILOT_RM_NAME: ${{ secrets.PILOT_RM_NAME }}
+          PILOT_RM_PASSWORD: ${{ secrets.PILOT_RM_PASSWORD }}
+          PILOT_WM_EMAIL: ${{ secrets.PILOT_WM_EMAIL }}
+          PILOT_WM_NAME: ${{ secrets.PILOT_WM_NAME }}
+          PILOT_WM_PASSWORD: ${{ secrets.PILOT_WM_PASSWORD }}
+          PILOT_SR_EMAIL: ${{ secrets.PILOT_SR_EMAIL }}
+          PILOT_SR_NAME: ${{ secrets.PILOT_SR_NAME }}
+          PILOT_SR_PASSWORD: ${{ secrets.PILOT_SR_PASSWORD }}
+          PILOT_RESELLER_EMAIL: ${{ secrets.PILOT_RESELLER_EMAIL }}
+          PILOT_RESELLER_NAME: ${{ secrets.PILOT_RESELLER_NAME }}
+          PILOT_RESELLER_PASSWORD: ${{ secrets.PILOT_RESELLER_PASSWORD }}
+          PILOT_RESELLER_BUSINESS_NAME: ${{ secrets.PILOT_RESELLER_BUSINESS_NAME }}
+          PILOT_RESELLER_ACCOUNT_REF: ${{ secrets.PILOT_RESELLER_ACCOUNT_REF }}
+          PILOT_WAREHOUSE_CODE: ${{ vars.PILOT_WAREHOUSE_CODE }}
+          PILOT_WAREHOUSE_NAME: ${{ vars.PILOT_WAREHOUSE_NAME }}
+          PILOT_TAX_CODE: ${{ vars.PILOT_TAX_CODE }}
+          PILOT_TAX_NAME: ${{ vars.PILOT_TAX_NAME }}
+          PILOT_TAX_RATE: ${{ vars.PILOT_TAX_RATE }}
+        run: |
+          for p in ADMIN RM WM SR RESELLER; do
+            v="PILOT_${p}_PASSWORD"
+            if [ -n "${!v}" ]; then echo "::add-mask::${!v}"; fi
+          done
+          python -m scripts.reset_to_pilot --confirm "$CONFIRM"
+      - name: Create Administrator
+        if: ${{ inputs.create_admin }}
+        env:
+          PILOT_ADMIN_EMAIL: ${{ secrets.PILOT_ADMIN_EMAIL }}
+          PILOT_ADMIN_NAME: ${{ secrets.PILOT_ADMIN_NAME }}
+          PILOT_ADMIN_PASSWORD: ${{ secrets.PILOT_ADMIN_PASSWORD }}
+        run: |
+          if [ -n "$PILOT_ADMIN_PASSWORD" ]; then echo "::add-mask::$PILOT_ADMIN_PASSWORD"; fi
+          python -m scripts.create_admin
+      - name: Import dealer price list SKUs
+        if: ${{ inputs.import_skus }}
+        run: python -m scripts.import_products data/products/sample-tyre-catalogue.xlsx --commit
+      - name: Preview clean-up for UAT
+        if: ${{ inputs.uat_reset == 'PREVIEW' }}
+        run: python -m scripts.reset_for_uat --dry-run
+      - name: Clean up for UAT
+        if: ${{ inputs.uat_reset != '' && inputs.uat_reset != 'PREVIEW' }}
+        env:
+          CONFIRM: ${{ inputs.uat_reset }}
+        run: python -m scripts.reset_for_uat --confirm "$CONFIRM"

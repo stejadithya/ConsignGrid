@@ -1,0 +1,20 @@
+# Local development dependencies. Application processes run on the host (see README).
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: tyreworld
+      POSTGRES_PASSWORD: tyreworld   # local development only
+      POSTGRES_DB: tyreworld
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/db/init-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tyreworld"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
