@@ -9,6 +9,7 @@ import { useAction, useApi } from "@/lib/hooks";
 import type { InitialStockCorrection, InitialStockEntry, StockCorrectionRow } from "@/lib/types";
 import { ProductSelect, ShopLabel } from "./pickers";
 import { Alert, Button, Card, DataTable, Field, Input, Loading, Modal, ProductCell, Textarea } from "./ui";
+import { vocab } from "@/lib/terms";
 
 const changeWords = (c: InitialStockCorrection["changes"][number]) => `${c.sku} ${c.before} → ${c.after}`;
 
@@ -29,7 +30,7 @@ export function InitialStockCorrections({ resellerId, onCorrected }: { resellerI
           {!e.can_correct && e.locked_reason && <div className="px-4 pt-3 text-caption text-ink-secondary">{e.locked_reason}</div>}
           <DataTable mobile="cards" label={`Initial stock ${e.transaction_number}`} search={false} rows={e.lines} rowKey={(l) => l.product_id}
             columns={[
-              { key: "t", mobile: "primary", header: "Tyre", className: "min-w-48 whitespace-normal", cell: (l) => <ProductCell name={l.name} sku={l.sku} /> },
+              { key: "t", mobile: "primary", header: vocab.Item, className: "min-w-48 whitespace-normal", cell: (l) => <ProductCell name={l.name} sku={l.sku} /> },
               { key: "r", mobile: "field", header: "Entered", align: "right", cell: (l) => l.recorded },
               { key: "c", mobile: "field", header: "Now", align: "right",
                 cell: (l) => <span className={l.current !== l.recorded ? "font-semibold" : undefined}>{l.current}</span> },
@@ -90,10 +91,10 @@ export function CorrectInitialStockModal({ resellerId, entry, onClose, onDone }:
   return (
     <Modal open wide title={`Correct initial stock ${entry.transaction_number}`} onClose={onClose}
       description={<>The original entry is kept. Your correction is recorded next to it, with your name and reason, and the
-        Administrator and Finance are told. Tyres already sold, reserved or blocked can&apos;t be corrected away.</>}
+        Administrator and Finance are told. {vocab.Items} already sold, reserved or blocked can&apos;t be corrected away.</>}
       footer={<><Button onClick={onClose}>Cancel</Button>
         <Button variant="primary" disabled={!ready || action.busy} onClick={save}>
-          {action.busy ? "Saving…" : `Save correction${count ? ` (${count} tyre${count === 1 ? "" : "s"})` : ""}`}</Button></>}>
+          {action.busy ? "Saving…" : `Save correction${count ? ` (${count} ${vocab.item}${count === 1 ? "" : "s"})` : ""}`}</Button></>}>
       <Alert>{action.error}</Alert>
       <div className="space-y-3">
         {entry.lines.map((l) => {
@@ -114,13 +115,13 @@ export function CorrectInitialStockModal({ resellerId, entry, onClose, onDone }:
         {added.map((a, i) => (
           <div key={i} className="grid grid-cols-[1fr_7rem_auto] items-center gap-2">
             <ProductSelect value={a.product} onChange={(v) => setAdded(added.map((x, j) => (j === i ? { ...x, product: v } : x)))} />
-            <Input type="number" min={1} aria-label={`Quantity for added tyre ${i + 1}`} placeholder="Qty" value={a.qty}
+            <Input type="number" min={1} aria-label={`Quantity for added ${vocab.item} ${i + 1}`} placeholder="Qty" value={a.qty}
               onChange={(ev) => setAdded(added.map((x, j) => (j === i ? { ...x, qty: ev.target.value } : x)))} />
-            <Button variant="ghost" aria-label={`Remove added tyre ${i + 1}`} onClick={() => setAdded(added.filter((_, j) => j !== i))}><Trash2 aria-hidden /></Button>
+            <Button variant="ghost" aria-label={`Remove added ${vocab.item} ${i + 1}`} onClick={() => setAdded(added.filter((_, j) => j !== i))}><Trash2 aria-hidden /></Button>
           </div>
         ))}
-        {duplicate && <p className="text-caption text-danger">That tyre is already on this entry: change its quantity above instead.</p>}
-        <Button size="sm" onClick={() => setAdded([...added, { product: "", qty: "" }])}><Plus aria-hidden />Add a missed tyre</Button>
+        {duplicate && <p className="text-caption text-danger">That {vocab.item} is already on this entry: change its quantity above instead.</p>}
+        <Button size="sm" onClick={() => setAdded([...added, { product: "", qty: "" }])}><Plus aria-hidden />Add a missed {vocab.item}</Button>
         <Field label="What was wrong?" required hint="At least 5 characters. Kept with the correction for audits.">
           {(id, describedBy) => <Textarea id={id} aria-describedby={describedBy} rows={2} value={reason} onChange={(ev) => setReason(ev.target.value)}
             placeholder="e.g. Typed 12 instead of 2 while serving a customer" />}
@@ -128,7 +129,7 @@ export function CorrectInitialStockModal({ resellerId, entry, onClose, onDone }:
         {count > 0 && (
           <div className="rounded-control bg-neutral-soft px-3 py-2 text-label">
             <span className="font-semibold">You are changing: </span>
-            {[...changes.map(({ l, after }) => `${l.sku} ${l.current} → ${after}`), ...newLines.map((a) => `new tyre +${a.qty}`)].join("; ")}
+            {[...changes.map(({ l, after }) => `${l.sku} ${l.current} → ${after}`), ...newLines.map((a) => `new ${vocab.item} +${a.qty}`)].join("; ")}
           </div>
         )}
       </div>
@@ -144,12 +145,12 @@ export function StockCorrectionsReport() {
       <Alert>{error}</Alert>
       <Card padded={false} title="Initial stock corrections" subtitle={data ? `${data.corrections} correction${data.corrections === 1 ? "" : "s"}` : undefined}>
         <DataTable label="Stock corrections" rows={data?.rows} rowKey={(r) => `${r.transaction_number}-${r.sku}`} pageSize={100}
-          empty="No corrections" emptyHint="Corrections to a dealer's initial stock appear here."
+          empty="No corrections" emptyHint={`Corrections to ${vocab.aPartner}'s initial stock appear here.`}
           columns={[
             { key: "d", header: "When", value: (r) => r.corrected_at, cell: (r) => fmtDateTime(r.corrected_at) },
-            { key: "dl", header: "Dealer", value: (r) => r.reseller_name ?? "",
+            { key: "dl", header: vocab.Partner, value: (r) => r.reseller_name ?? "",
               cell: (r) => r.reseller_id ? <Link className="link" href={`/resellers/${r.reseller_id}`}>{r.reseller_name}</Link> : "—" },
-            { key: "s", header: "Shop", value: (r) => r.location_code ?? "", cell: (r) => <ShopLabel code={r.location_code} withDealer={false} /> },
+            { key: "s", header: vocab.Site, value: (r) => r.location_code ?? "", cell: (r) => <ShopLabel code={r.location_code} withDealer={false} /> },
             { key: "k", header: "SKU", value: (r) => r.sku, cell: (r) => <span className="sku text-label">{r.sku}</span> },
             { key: "b", header: "Before", align: "right", value: (r) => r.before, cell: (r) => r.before },
             { key: "a", header: "After", align: "right", value: (r) => r.after, cell: (r) => r.after },

@@ -26,6 +26,7 @@ import { useAction, useApi } from "@/lib/hooks";
 import type {
   AllocationPosition, Delivery, Invoice, ReplenishmentRequest, Reseller, Sale, Stocktake, Transfer,
 } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 export default function ResellerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,7 +42,7 @@ export default function ResellerDetailPage() {
 
   return (
     <>
-      <PageHeader eyebrow={staff ? "Dealer account" : "My account"}
+      <PageHeader eyebrow={staff ? `${vocab.Partner} account` : "My account"}
         title={<span className="flex flex-wrap items-center gap-3">
           <span aria-hidden className="inline-flex size-10 items-center justify-center rounded-card bg-brand text-subheading font-semibold text-ink">
             {r.business_name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
@@ -74,7 +75,7 @@ export default function ResellerDetailPage() {
       {r.status !== "ACTIVE" && <Alert tone="warn">This account is {humanize(r.status)}: no new replenishment dispatches or transfers. Existing obligations remain visible.</Alert>}
       <Tabs active={tab} onChange={setTab} tabs={[
         { id: "overview", label: "Overview" },
-        ...(staff && can("dealer_history.read") ? [{ id: "dealer-history", label: "Dealer history" }] : []),
+        ...(staff && can("dealer_history.read") ? [{ id: "dealer-history", label: `${vocab.Partner} history` }] : []),
         { id: "stock", label: "Consignment stock" }, { id: "replenishment", label: "Replenishment" },
         { id: "sales", label: "Sales & invoices" }, { id: "transfers", label: "Transfers" },
         { id: "stocktakes", label: "Stocktakes" }, { id: "history", label: "Activity" },
@@ -124,7 +125,7 @@ function OverviewTab({ reseller, onTab }: { reseller: Reseller; onTab: (t: strin
             columns={[
               { key: "n", mobile: "primary" as const, header: "Sale", cell: (s) => <Link className="link" href={`/sales?sale=${s.id}`}>{s.number}</Link> },
               { key: "d", mobile: "field" as const, mobileOrder: 1, header: "Date", cell: (s) => <span className="text-ink-secondary">{fmtDate(s.sale_date)}</span> },
-              { key: "sk", mobile: "field" as const, mobileOrder: 2, header: "Tyres", className: "min-w-48 whitespace-normal", cell: (s) => <span className="text-label text-ink-secondary">{s.lines.map((l) => `${l.chargeable_qty} × ${l.product_name ?? l.sku} (${l.sku})`).join(", ")}</span> },
+              { key: "sk", mobile: "field" as const, mobileOrder: 2, header: vocab.Items, className: "min-w-48 whitespace-normal", cell: (s) => <span className="text-label text-ink-secondary">{s.lines.map((l) => `${l.chargeable_qty} × ${l.product_name ?? l.sku} (${l.sku})`).join(", ")}</span> },
               { key: "inv", mobile: "status" as const, header: "Invoicing", cell: (s) => <div className="flex gap-1">{[...new Set(s.lines.map((l) => l.invoice_status))].map((st) => <Badge key={st} value={st} />)}</div> },
             ]} />
         </Card>
@@ -135,7 +136,7 @@ function OverviewTab({ reseller, onTab }: { reseller: Reseller; onTab: (t: strin
                 <div className="flex items-center justify-between"><span className="font-medium">{nextDelivery.number}</span><Badge value={nextDelivery.status} /></div>
                 <p className="mt-1 text-label text-ink-secondary">{nextDelivery.lines.reduce((a, l) => a + l.qty_dispatched, 0)} unit(s) dispatched {fmtDate(nextDelivery.dispatched_at)} to {nextDelivery.to_location_code}</p>
               </div>
-            ) : <p className="text-label text-ink-muted">Nothing in transit to this dealer.</p>}
+            ) : <p className="text-label text-ink-muted">Nothing in transit to this {vocab.partner}.</p>}
           </Card>
           <Card title="Last stocktake" icon={ClipboardCheck}>
             {lastCount ? (
@@ -187,16 +188,16 @@ function StockTab({ reseller }: { reseller: Reseller }) {
           <div key={k} className="-mb-px border-r border-b border-line px-5 py-3 last:border-r-0"><div className="text-caption text-ink-muted">{k}</div><div className={cx("num text-heading font-semibold", k === "Uncovered shortfall" && v > 0 && "text-warning")}>{v}</div></div>
         ))}
       </div>
-      <DataTable mobile="cards" label="Dealer stock" rows={data} rowKey={(p) => `${p.location_id}-${p.product_id}`} empty="No consignment stock or targets yet" emptyHint="Set SKU targets for this dealer, then deliver stock or post opening balances."
+      <DataTable mobile="cards" label={`${vocab.Partner} stock`} rows={data} rowKey={(p) => `${p.location_id}-${p.product_id}`} empty="No consignment stock or targets yet" emptyHint={`Set SKU targets for this ${vocab.partner}, then deliver stock or post opening balances.`}
         columns={[
-          { key: "l", mobile: "secondary" as const, header: "Shop", value: (p) => p.location_code, cell: (p) => <ShopLabel code={p.location_code} withDealer={false} /> },
+          { key: "l", mobile: "secondary" as const, header: vocab.Site, value: (p) => p.location_code, cell: (p) => <ShopLabel code={p.location_code} withDealer={false} /> },
           { key: "s", mobile: "primary" as const, header: "Product", value: (p) => `${p.sku} ${p.product_name}`, cell: (p) => <div className="flex items-center gap-1"><ProductCell name={p.product_name} sku={p.sku} /><StockOrigin locationId={p.location_id} productId={p.product_id} /></div> },
           { key: "t", mobile: "field" as const, mobileOrder: 2, header: "Target", align: "right", value: (p) => p.target_qty, cell: (p) => <>{p.target_qty}{!p.auto_replenish && p.allocation_id && <span title="Auto-replenish off" className="ml-1 text-caption text-ink-muted">(manual)</span>}</> },
-          { key: "oh", mobile: "field" as const, mobileOrder: 1, header: "On hand", align: "right", value: (p) => p.on_hand, cell: (p) => <NumLink href={links.movements(p.product_id, p.location_id)} title="Every movement at this dealer"><Qty value={p.on_hand} zeroMuted={false} /></NumLink> },
+          { key: "oh", mobile: "field" as const, mobileOrder: 1, header: "On hand", align: "right", value: (p) => p.on_hand, cell: (p) => <NumLink href={links.movements(p.product_id, p.location_id)} title={`Every movement at this ${vocab.partner}`}><Qty value={p.on_hand} zeroMuted={false} /></NumLink> },
           { key: "av", header: "Available", align: "right", value: (p) => p.available, cell: (p) => <Qty value={p.available} /> },
           { key: "rs", header: "Reserved", align: "right", cell: (p) => <NumLink href={p.reserved ? links.movements(p.product_id, p.location_id) : null} title="What it is reserved for"><Qty value={p.reserved} /></NumLink> },
           { key: "bl", header: "Blocked", align: "right", cell: (p) => <NumLink href={p.blocked ? links.movements(p.product_id, p.location_id) : null} title="When and why it was blocked"><Qty value={p.blocked} tone="danger" /></NumLink> },
-          { key: "or", header: "Open replen.", align: "right", value: (p) => p.open_replenishment, cell: (p) => <NumLink href={p.open_replenishment ? links.demand(p.product_id, reseller.id) : null} title="Open requests for this tyre"><Qty value={p.open_replenishment} /></NumLink> },
+          { key: "or", header: "Open replen.", align: "right", value: (p) => p.open_replenishment, cell: (p) => <NumLink href={p.open_replenishment ? links.demand(p.product_id, reseller.id) : null} title={`Open requests for this ${vocab.item}`}><Qty value={p.open_replenishment} /></NumLink> },
           { key: "in", header: "Inbound", align: "right", cell: (p) => <NumLink href={p.replenishment_in_transit + p.transfers_inbound ? links.deliveries() : null} title="Deliveries on the way"><Qty value={p.replenishment_in_transit + p.transfers_inbound} /></NumLink> },
           { key: "un", mobile: "field" as const, mobileOrder: 3, header: "Unmet", align: "right", value: (p) => p.remaining_unmet, cell: (p) => <NumLink href={p.remaining_unmet ? links.demand(p.product_id, reseller.id) : null} title="Still waiting for supply"><Qty value={p.remaining_unmet} tone="warn" /></NumLink> },
           ...(can("allocation.write") ? [{ key: "e", mobile: "action" as const, header: "", cell: (p: AllocationPosition) => <Button size="sm" variant="ghost"
@@ -255,7 +256,7 @@ function SalesTab({ rid }: { rid: number }) {
             { key: "n", mobile: "primary" as const, header: "Invoice", cell: (i) => <Link className="link" href={`/invoices/${i.id}`}>{i.number}</Link> },
             { key: "d", mobile: "field" as const, mobileOrder: 1, header: "Date", cell: (i) => fmtDate(i.invoice_date) },
             { key: "due", mobile: "field" as const, mobileOrder: 2, header: "Due", cell: (i) => fmtDate(i.due_date) },
-            { key: "t", mobile: "field" as const, mobileOrder: 3, header: "Tyres", align: "right", cell: (i) => i.lines.reduce((a, l) => a + l.quantity, 0) },
+            { key: "t", mobile: "field" as const, mobileOrder: 3, header: vocab.Items, align: "right", cell: (i) => i.lines.reduce((a, l) => a + l.quantity, 0) },
             { key: "s", mobile: "status" as const, header: "Status", cell: (i) => <Badge value={i.status} /> },
           ]} />
       </Card>
@@ -278,7 +279,7 @@ function StocktakesTab({ rid }: { rid: number }) {
       <DataTable mobile="cards" label="Stock checks" search={false} rows={data} rowKey={(s) => s.id} empty="No stocktakes yet"
         columns={[
           { key: "n", mobile: "primary" as const, header: "Stocktake", cell: (s) => <Link className="link" href={`/stocktakes/${s.id}`}>{s.number}</Link> },
-          { key: "l", mobile: "secondary" as const, header: "Shop", cell: (s) => <ShopLabel code={s.location_code} withDealer={false} /> },
+          { key: "l", mobile: "secondary" as const, header: vocab.Site, cell: (s) => <ShopLabel code={s.location_code} withDealer={false} /> },
           { key: "d", mobile: "field" as const, mobileOrder: 1, header: "Count date", cell: (s) => fmtDate(s.count_date) },
           { key: "by", header: "Counted by", cell: (s) => s.counted_by },
           { key: "v", mobile: "field" as const, mobileOrder: 2, header: "Net variance", align: "right", cell: (s) => <Qty value={s.total_variance} tone={s.total_variance < 0 ? "danger" : undefined} /> },
@@ -316,8 +317,8 @@ function ProfileTab({ reseller: r, onChanged }: { reseller: Reseller; onChanged:
         ]} /> : <p className="text-body text-ink-muted">No agreement recorded (transfers need per-transfer consent).</p>}
       </Card>
       <div className="lg:col-span-2"><AgreementFilesCard resellerId={r.id} canEdit={can("reseller.write")} /></div>
-      <Card title="Shops (delivery locations)" className="lg:col-span-2" padded={false} actions={can("reseller.write") && <Button size="sm" onClick={() => setLocOpen(true)}>Add shop</Button>}>
-        <DataTable mobile="cards" label="Shops" search={false} rows={r.locations} rowKey={(l) => l.id}
+      <Card title={`${vocab.Sites} (delivery locations)`} className="lg:col-span-2" padded={false} actions={can("reseller.write") && <Button size="sm" onClick={() => setLocOpen(true)}>Add {vocab.site}</Button>}>
+        <DataTable mobile="cards" label={vocab.Sites} search={false} rows={r.locations} rowKey={(l) => l.id}
           columns={[
             { key: "c", mobile: "primary" as const, header: "Code", cell: (l) => <span className="sku text-label">{l.code}</span> },
             { key: "n", mobile: "secondary" as const, mobileOrder: 1, header: "Name", cell: (l) => l.name },
@@ -330,16 +331,16 @@ function ProfileTab({ reseller: r, onChanged }: { reseller: Reseller; onChanged:
         onConfirm={async (reason) => { if (await action.run(() => api.post(`/resellers/${r.id}/status`, { status: newStatus, reason }))) { setStatusOpen(false); onChanged(); } }}>
         <Field label="New status">{(id) => <Select id={id} value={newStatus} onChange={(e) => setNewStatus(e.target.value)} options={["ACTIVE", "ON_HOLD", "CLOSED"].map((s) => ({ value: s, label: humanize(s) }))} />}</Field>
       </ConfirmDialog>
-      <Modal open={locOpen} title="Add a shop" description={`Its code is created automatically (${r.account_ref}-NN).`} onClose={() => setLocOpen(false)}
+      <Modal open={locOpen} title={`Add ${vocab.aSite}`} description={`Its code is created automatically (${r.account_ref}-NN).`} onClose={() => setLocOpen(false)}
         footer={<><Button onClick={() => setLocOpen(false)}>Cancel</Button><Button variant="primary" disabled={action.busy || !loc.name.trim() || !loc.address_line1.trim() || !loc.city.trim()}
           onClick={async () => {
             const body = { name: loc.name, address_line1: loc.address_line1, city: loc.city, address_line2: loc.address_line2 || null,
               postcode: loc.postcode || null, contact_phone: loc.contact_phone || null };
             if (await action.run(() => api.post(`/resellers/${r.id}/locations`, body))) { setLocOpen(false); invalidateReference(); onChanged(); }
-          }}>Add shop</Button></>}>
+          }}>Add {vocab.site}</Button></>}>
         <Alert>{action.error}</Alert>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Shop name" required>{(id) => <Input id={id} value={loc.name} onChange={(e) => setLoc({ ...loc, name: e.target.value })} />}</Field>
+          <Field label={`${vocab.Site} name`} required>{(id) => <Input id={id} value={loc.name} onChange={(e) => setLoc({ ...loc, name: e.target.value })} />}</Field>
           <Field label="Contact phone">{(id) => <Input id={id} value={loc.contact_phone} onChange={(e) => setLoc({ ...loc, contact_phone: e.target.value })} />}</Field>
           <Field label="Delivery address" required>{(id) => <Input id={id} value={loc.address_line1} onChange={(e) => setLoc({ ...loc, address_line1: e.target.value })} placeholder="Address line 1" />}</Field>
           <Field label="Address line 2">{(id) => <Input id={id} value={loc.address_line2} onChange={(e) => setLoc({ ...loc, address_line2: e.target.value })} />}</Field>
@@ -359,6 +360,6 @@ function missingDetails(r: Reseller): string[] {
   if (!r.phone?.trim()) out.push("phone");
   if (!r.billing_address?.trim()) out.push("billing address");
   if (!r.sales_rep_user_id) out.push("sales representative");
-  if (!r.locations.some((l) => l.address_line1?.trim() && l.city?.trim())) out.push("a shop address and city");
+  if (!r.locations.some((l) => l.address_line1?.trim() && l.city?.trim())) out.push(`${vocab.aSite} address and city`);
   return out;
 }

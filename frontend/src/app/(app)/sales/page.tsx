@@ -17,6 +17,7 @@ import { useAction, useApi } from "@/lib/hooks";
 import { BILLING_LABEL, billingState, billingTrack, NON_CONSIGNMENT_LABEL, nextStep, replacementLabel, saleSourceLabel, stockTrack } from "@/lib/saleJourney";
 import type { Sale, SaleLine, Stocktake } from "@/lib/types";
 import { branding } from "@/config/branding";
+import { vocab } from "@/lib/terms";
 
 export default function SalesPage() {
   const params = useSearchParams();
@@ -37,8 +38,8 @@ export default function SalesPage() {
   return (
     <>
       <PageHeader title={isReseller ? "My sales" : "Sales & stocktakes"}
-        subtitle={isReseller ? "Report each tyre you sell so the dealership can invoice it and send replacement stock."
-          : "Confirmed consignment sales are chargeable to the dealer and trigger replenishment. Replenishment never creates an invoice."}
+        subtitle={isReseller ? `Report each ${vocab.item} you sell so ${branding.companyName} can invoice it and send replacement stock.`
+          : `Confirmed consignment sales are chargeable to the ${vocab.partner} and trigger replenishment. Replenishment never creates an invoice.`}
         actions={<>
           {can("stocktake.record") && <ButtonLink href="/stocktakes/new"><ClipboardCheck aria-hidden />New stocktake</ButtonLink>}
           {(can("sales.record") || can("sales.cash")) && <Button variant="primary" onClick={() => setRecordOpen(true)}><Plus aria-hidden />{isReseller ? "Report a sale" : "Record sale"}</Button>}
@@ -52,7 +53,7 @@ export default function SalesPage() {
           {created.source === "CASH_SALE" ? <>Non-consignment sale from the warehouse; invoice record {created.lines[0]?.invoice_number ? `${created.lines[0].invoice_number} ` : ""}created{created.customer_name ? ` for ${created.customer_name}` : ""}.{can("invoice.read") && <> <Link className="underline" href="/invoices">Open invoices</Link></>}</>
           : isReseller
             ? <>Thanks, {created.lines.flatMap((l) => l.replenishment).length
-                ? <>your replacement tyres are being arranged ({created.lines.flatMap((l) => l.replenishment).map((r, i) => <span key={r.id}>{i > 0 && ", "}<Link className="underline" href={`/replenishment/${r.id}`}>{r.number}</Link></span>)}).</>
+                ? <>your replacement {vocab.items} are being arranged ({created.lines.flatMap((l) => l.replenishment).map((r, i) => <span key={r.id}>{i > 0 && ", "}<Link className="underline" href={`/replenishment/${r.id}`}>{r.number}</Link></span>)}).</>
                 : "your sale is recorded."} {branding.companyName} will invoice you through Xero.</>
           : created.lines.flatMap((l) => l.replenishment).length
             ? <>Replenishment raised: {created.lines.flatMap((l) => l.replenishment).map((r) => <Link key={r.id} className="underline" href={`/replenishment/${r.id}`}>{r.number} ({r.qty_required}, {humanize(r.status)}) </Link>)}</>
@@ -63,11 +64,11 @@ export default function SalesPage() {
         <Card padded={false}>
           <DataTable mobile="cards" label="Sales" rows={rows} rowKey={(s) => s.id} onRowClick={(s) => setDetail(s.id)}
             empty={notInvoicedOnly ? "Everything here is invoiced" : isReseller ? "No sales reported yet" : "No sales recorded yet"}
-            emptyHint={isReseller ? "Use “Report a sale” whenever you sell consignment stock." : "Confirmed sales reported by dealers or found in stocktakes appear here."}
+            emptyHint={isReseller ? "Use “Report a sale” whenever you sell consignment stock." : `Confirmed sales reported by ${vocab.partners} or found in stocktakes appear here.`}
             filterCount={[reseller, notInvoicedOnly].filter(Boolean).length}
             onClearFilters={() => { setReseller(""); setNotInvoicedOnly(false); }}
             filters={<>
-              {!user?.reseller_id && <FilterField label="Dealer" className="w-64"><ResellerSelect value={reseller} onChange={setReseller} /></FilterField>}
+              {!user?.reseller_id && <FilterField label={vocab.Partner} className="w-64"><ResellerSelect value={reseller} onChange={setReseller} /></FilterField>}
               <label className="flex items-center gap-2 text-label text-ink-secondary">
                 <input type="checkbox" className="size-4 accent-ink" checked={notInvoicedOnly} onChange={(e) => setNotInvoicedOnly(e.target.checked)} />
                 Not invoiced only
@@ -76,10 +77,10 @@ export default function SalesPage() {
             columns={[
               { key: "n", mobile: "primary" as const, header: "Sale", mobileSort: "Sale number", value: (s) => s.number, cell: (s) => <span className="font-medium whitespace-nowrap text-ink">{s.number}</span> },
               { key: "d", mobile: "field" as const, mobileOrder: 1, header: "Date", mobileSort: "Sale date", value: (s) => s.sale_date, cell: (s) => fmtDate(s.sale_date) },
-              { key: "r", mobile: "secondary" as const, header: "Dealer", mobileSort: true, value: (s) => `${s.reseller_name} ${s.customer_name ?? ""}`, cell: (s) => <>{s.source === "CASH_SALE" ? NON_CONSIGNMENT_LABEL : s.reseller_name}{s.customer_name && <div className="text-caption text-ink-muted">{s.customer_name}{s.customer_phone ? ` · ${s.customer_phone}` : ""}</div>}</> },
-              { key: "l", header: "Shop", value: (s) => s.location_code, cell: (s) => <ShopLabel code={s.location_code} withDealer={false} /> },
+              { key: "r", mobile: "secondary" as const, header: vocab.Partner, mobileSort: true, value: (s) => `${s.reseller_name} ${s.customer_name ?? ""}`, cell: (s) => <>{s.source === "CASH_SALE" ? NON_CONSIGNMENT_LABEL : s.reseller_name}{s.customer_name && <div className="text-caption text-ink-muted">{s.customer_name}{s.customer_phone ? ` · ${s.customer_phone}` : ""}</div>}</> },
+              { key: "l", header: vocab.Site, value: (s) => s.location_code, cell: (s) => <ShopLabel code={s.location_code} withDealer={false} /> },
               { key: "src", header: "Source", value: (s) => s.source, cell: (s) => <>{saleSourceLabel(s.source)}<div className="text-caption text-ink-muted">{s.source_reference}</div></> },
-              { key: "sk", mobile: "field" as const, mobileOrder: 2, header: "Tyres", className: "min-w-56 whitespace-normal", value: (s) => s.lines.map((l) => `${l.sku} ${l.product_name}`).join(" "), cell: (s) => <span className="space-y-0.5 text-caption">{s.lines.map((l) => <span key={l.id} className="block"><TyreLabel sku={l.sku} productId={l.product_id} qty={l.chargeable_qty} /></span>)}</span> },
+              { key: "sk", mobile: "field" as const, mobileOrder: 2, header: vocab.Items, className: "min-w-56 whitespace-normal", value: (s) => s.lines.map((l) => `${l.sku} ${l.product_name}`).join(" "), cell: (s) => <span className="space-y-0.5 text-caption">{s.lines.map((l) => <span key={l.id} className="block"><TyreLabel sku={l.sku} productId={l.product_id} qty={l.chargeable_qty} /></span>)}</span> },
               { key: "q", header: "Qty", align: "right", value: (s) => s.total_qty, cell: (s) => s.total_qty },
               { key: "rp", mobile: "field" as const, mobileOrder: 3, header: "Replacement", value: (s) => replacementLabel(s), cell: (s) => <span className="whitespace-nowrap text-ink-secondary">{replacementLabel(s)}</span> },
               { key: "inv", mobile: "status" as const, header: "Invoiced?", value: (s) => billingState(s) ?? "", cell: (s) => { const b = billingState(s); return b
@@ -93,11 +94,11 @@ export default function SalesPage() {
       {tab === "stocktakes" && (
         <Card padded={false}>
           <DataTable mobile="cards" label="Stock checks" rows={stocktakes} rowKey={(s) => s.id} onRowClick={(s) => router.push(`/stocktakes/${s.id}`)}
-            empty="No stocktakes yet" emptyHint="Start a stocktake at a dealer location to compare expected and counted stock."
+            empty="No stocktakes yet" emptyHint={`Start a stocktake at ${vocab.aPartner} location to compare expected and counted stock.`}
             columns={[
               { key: "n", mobile: "primary", header: "Stocktake", value: (s) => s.number, cell: (s) => <span className="font-medium whitespace-nowrap text-ink">{s.number}</span> },
-              { key: "r", mobile: "secondary", header: "Dealer", value: (s) => s.reseller_name, cell: (s) => s.reseller_name },
-              { key: "l", header: "Shop", value: (s) => `${s.location_name ?? ""} ${s.location_city ?? ""} ${s.location_code}`,
+              { key: "r", mobile: "secondary", header: vocab.Partner, value: (s) => s.reseller_name, cell: (s) => s.reseller_name },
+              { key: "l", header: vocab.Site, value: (s) => `${s.location_name ?? ""} ${s.location_city ?? ""} ${s.location_code}`,
                 cell: (s) => <div>{s.location_name ?? s.location_code}<div className="text-caption text-ink-muted">{[s.location_city, s.location_code].filter(Boolean).join(" · ")}</div></div> },
               { key: "d", mobile: "field", mobileOrder: 1, header: "Count date", value: (s) => s.count_date, cell: (s) => fmtDate(s.count_date) },
               { key: "by", header: "Counted by", value: (s) => s.counted_by, cell: (s) => s.counted_by },
@@ -145,11 +146,11 @@ function RecordSaleModal({ onClose, onDone }: { onClose: () => void; onDone: (s:
       footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" disabled={action.busy || !effectiveLocation || !lines.some((l) => l.product)} onClick={submit}>{action.busy ? "Recording…" : isReseller ? "Report sale" : "Record sale"}</Button></>}>
       <Alert>{action.error}</Alert>
       <Alert tone="info">{isReseller
-        ? `Report tyres you have sold to your customers. Replacement stock is arranged automatically, and ${branding.companyName} invoices you through Xero.`
-        : cash ? "Non-consignment sale: a customer (a nearby shop or any dealer) buys and pays at the warehouse. Stock leaves the warehouse now, nothing is replaced, and an invoice record is created to complete in Xero."
+        ? `Report ${vocab.items} you have sold to your customers. Replacement stock is arranged automatically, and ${branding.companyName} invoices you through Xero.`
+        : cash ? `Non-consignment sale: a customer (a nearby ${vocab.site} or any ${vocab.partner}) buys and pays at the warehouse. Stock leaves the warehouse now, nothing is replaced, and an invoice record is created to complete in Xero.`
         : "Only confirmed sales belong here. Missing stock found during a count should go through a stocktake — it is never assumed sold."}</Alert>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label={isReseller ? "Location" : "Dealer location"} required>{(id) => canCash
+        <Field label={isReseller ? "Location" : `${vocab.Partner} location`} required>{(id) => canCash
           ? <Select id={id} value={effectiveLocation} onChange={(e) => setLocation(e.target.value === "cash" ? "cash" : e.target.value ? Number(e.target.value) : "")}
               placeholder={canConsign ? "Select location…" : undefined}
               options={[{ value: "cash", label: `${NON_CONSIGNMENT_LABEL}` },
@@ -161,11 +162,11 @@ function RecordSaleModal({ onClose, onDone }: { onClose: () => void; onDone: (s:
           <Field label="Customer phone">{(id) => <Input id={id} value={phone} onChange={(e) => setPhone(e.target.value)} />}</Field>
         </>}
         {!isReseller && !cash && <Field label="Source">{(id) => <Select id={id} value={source} onChange={(e) => setSource(e.target.value)}
-          options={[{ value: "RESELLER_REPORT", label: "Reported by dealer" }, { value: "REP_VISIT", label: "Sales rep visit" }, { value: "OTHER", label: "Other" }]} />}</Field>}
+          options={[{ value: "RESELLER_REPORT", label: `Reported by ${vocab.partner}` }, { value: "REP_VISIT", label: "Sales rep visit" }, { value: "OTHER", label: "Other" }]} />}</Field>}
         {!cash && <Field label="Source reference">{(id) => <Input id={id} value={ref} onChange={(e) => setRef(e.target.value)} placeholder="e.g. email 12 Oct, docket #" />}</Field>}
       </div>
       <div className="space-y-2">
-        <div className="text-caption font-medium text-ink-secondary">{cash ? "Tyres sold from the warehouse" : "Tyres sold"}</div>
+        <div className="text-caption font-medium text-ink-secondary">{cash ? `${vocab.Items} sold from the warehouse` : `${vocab.Items} sold`}</div>
         {lines.map((l, i) => (
           <div key={i} className="grid grid-cols-[1fr_90px_auto] gap-2">
             <ProductSelect value={l.product} onChange={(v) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, product: v } : x)))} />
@@ -203,9 +204,9 @@ function SaleDetailModal({ id, onClose, onChanged }: { id: number; onClose: () =
               : <p className="text-body">{billingState(s) === "INVOICED" ? <b className="font-semibold text-success">Invoiced ✓</b> : <span className="text-ink-secondary">Not yet invoiced</span>}</p>}
           </div>
         </div>
-        <DataTable mobile="cards" label="Tyres on this sale" search={false} rows={s.lines} rowKey={(l) => l.id}
+        <DataTable mobile="cards" label={`${vocab.Items} on this sale`} search={false} rows={s.lines} rowKey={(l) => l.id}
           columns={[
-            { key: "sku", mobile: "primary" as const, header: "Tyre", className: "min-w-48 whitespace-normal", cell: (l) => <TyreLabel sku={l.sku} productId={l.product_id} /> },
+            { key: "sku", mobile: "primary" as const, header: vocab.Item, className: "min-w-48 whitespace-normal", cell: (l) => <TyreLabel sku={l.sku} productId={l.product_id} /> },
             { key: "q", mobile: "field" as const, mobileOrder: 1, header: "Qty", align: "right", cell: (l) => <>{l.chargeable_qty}{l.reversed_qty > 0 && <span className="text-caption text-ink-muted"> ({l.reversed_qty} reversed)</span>}</> },
             { key: "inv", mobile: "status" as const, header: "Invoice", cell: (l) => fullBilling
               ? l.invoice_number ?? <Badge value={l.invoice_status} />
@@ -215,7 +216,7 @@ function SaleDetailModal({ id, onClose, onChanged }: { id: number; onClose: () =
           ]} />
       </>}
       <ConfirmDialog open={!!reverse} title="Reverse sale quantity" danger requireReason busy={action.busy} error={action.error} confirmLabel="Post reversal"
-        message="Posts a compensating movement back into the dealer's stock and withdraws the matching not-yet-dispatched replenishment. Only uninvoiced lines can be reversed."
+        message={`Posts a compensating movement back into the ${vocab.partner}'s stock and withdraws the matching not-yet-dispatched replenishment. Only uninvoiced lines can be reversed.`}
         onClose={() => setReverse(null)}
         onConfirm={async (reason) => { if (await action.run(() => api.post(`/sales/lines/${reverse!.id}/reverse`, { quantity: Number(qty), reason }))) { setReverse(null); reload(); onChanged(); } }}>
         <Field label={`Quantity (max ${reverse?.chargeable_qty})`}>{(fid) => <Input id={fid} type="number" min={1} max={reverse?.chargeable_qty} value={qty} onChange={(e) => setQty(e.target.value)} />}</Field>

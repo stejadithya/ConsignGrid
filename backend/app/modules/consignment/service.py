@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import flush_or_conflict
 from app.core.errors import BusinessRuleError, NotFoundError
+from app.core.industry import vocab
 from app.modules.audit.service import record_audit
 from app.modules.catalogue.models import Product
 from app.modules.consignment.models import AllocationChange, ConsignmentAllocation
@@ -25,7 +26,7 @@ def lock_allocation(db: Session, location_id: int, product_id: int) -> Consignme
 def set_allocation(db: Session, actor: User, data: AllocationIn) -> ConsignmentAllocation:
     location = db.get(Location, data.location_id)
     if location is None or location.type != LocationType.CONSIGNMENT:
-        raise BusinessRuleError("Allocations can only be set for dealer consignment locations")
+        raise BusinessRuleError(f"Allocations can only be set for {vocab.partner} consignment locations")
     product = db.get(Product, data.product_id)
     if product is None:
         raise NotFoundError("Product not found")

@@ -6,6 +6,7 @@ import { fmtDateTime, humanize } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 import { Alert, Badge, Card, DataTable, Field, Input } from "./ui";
 import { ShopLabel, TyreLabel } from "./pickers";
+import { vocab } from "@/lib/terms";
 
 interface HistoryRow {
   occurred_at: string;
@@ -70,8 +71,8 @@ export function ResellerHistory({ resellerId }: { resellerId: number }) {
             { key: "d", pin: true, header: "When", value: (r) => r.occurred_at, cell: (r) => <span className="whitespace-nowrap">{fmtDateTime(r.occurred_at)}</span> },
             { key: "c", header: "Event", value: (r) => r.category, cell: (r) => r.category === "OPENING_BALANCE" ? "Initial stock (backorder)"
               : r.category === "INITIAL_STOCK_CORRECTION" ? "Initial stock corrected" : humanize(r.category) },
-            { key: "l", header: "Shop", value: (r) => r.location_code, cell: (r) => <ShopLabel code={r.location_code} withDealer={false} /> },
-            { key: "s", header: "Tyre", value: (r) => r.sku, className: "min-w-48 whitespace-normal", cell: (r) => <TyreLabel sku={r.sku} /> },
+            { key: "l", header: vocab.Site, value: (r) => r.location_code, cell: (r) => <ShopLabel code={r.location_code} withDealer={false} /> },
+            { key: "s", header: vocab.Item, value: (r) => r.sku, className: "min-w-48 whitespace-normal", cell: (r) => <TyreLabel sku={r.sku} /> },
             { key: "in", header: "In", align: "right", cell: (r) => (r.qty_in ? <span className="text-success">+{r.qty_in}</span> : "") },
             { key: "out", header: "Out", align: "right", cell: (r) => (r.qty_out ? <span className="text-danger">−{r.qty_out}</span> : "") },
             { key: "bal", header: "Balance", align: "right", cell: (r) => <b>{r.running_balance}</b> },
@@ -90,13 +91,13 @@ export function ResellerHistory({ resellerId }: { resellerId: number }) {
       </Card>
       <Card title={`Outstanding obligations (${data?.outstanding_total ?? 0} units)`} padded={false}
         actions={data && <div className="flex gap-2 text-caption">{Object.entries(data.outstanding_by_reason).map(([k, v]) => <span key={k}><Badge value={k} /> {v}</span>)}</div>}>
-        <DataTable mobile="cards" label="Replenishment for this dealer" search={false} rows={data?.outstanding_obligations} rowKey={(o) => o.request_id} empty="Nothing outstanding"
+        <DataTable mobile="cards" label={`Replenishment for this ${vocab.partner}`} search={false} rows={data?.outstanding_obligations} rowKey={(o) => o.request_id} empty="Nothing outstanding"
           columns={[
             { key: "n", mobile: "primary", header: "Request", cell: (o) => <Link className="link" href={`/replenishment/${o.request_id}`}>{o.number}</Link> },
             { key: "r", header: "Reason", cell: (o) => <Badge value={o.reason} /> },
             { key: "o", header: "Origin", cell: (o) => o.origin_number ?? "—" },
-            { key: "l", header: "Shop", cell: (o) => <ShopLabel code={o.location_code} withDealer={false} /> },
-            { key: "s", mobile: "secondary", header: "Tyre", className: "min-w-48 whitespace-normal", cell: (o) => <TyreLabel sku={o.sku} /> },
+            { key: "l", header: vocab.Site, cell: (o) => <ShopLabel code={o.location_code} withDealer={false} /> },
+            { key: "s", mobile: "secondary", header: vocab.Item, className: "min-w-48 whitespace-normal", cell: (o) => <TyreLabel sku={o.sku} /> },
             { key: "q", mobile: "field", mobileOrder: 1, header: "Outstanding", align: "right", cell: (o) => o.qty_outstanding },
             { key: "a", mobile: "field", mobileOrder: 2, header: "Awaiting supply", align: "right", cell: (o) => o.qty_awaiting_supply },
             { key: "st", mobile: "status", header: "Status", cell: (o) => <Badge value={o.status} /> },

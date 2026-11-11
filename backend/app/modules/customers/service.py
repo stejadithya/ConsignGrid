@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.db import flush_or_conflict
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError
+from app.core.industry import vocab
 from app.core.permissions import Role
 from app.modules.audit.service import record_audit
 from app.modules.catalogue.models import Product, TaxRate
@@ -39,14 +40,14 @@ from app.modules.identity.service import create_user
 
 
 def get_reseller(db: Session, user: User, reseller_id: int) -> Reseller:
-    ensure_reseller_access(user, reseller_id, "Dealer")
+    ensure_reseller_access(user, reseller_id, vocab.Partner)
     r = db.execute(
         select(Reseller)
         .where(Reseller.id == reseller_id)
         .options(selectinload(Reseller.locations), selectinload(Reseller.agreement))
     ).scalar_one_or_none()
     if r is None:
-        raise NotFoundError("Dealer not found")
+        raise NotFoundError(f"{vocab.Partner} not found")
     return r
 
 
@@ -111,7 +112,7 @@ def create_reseller(db: Session, actor: User, data: ResellerCreate) -> tuple[Res
     fields = data.model_dump(exclude={"agreement", "locations", "create_login"})
     if data.account_ref:
         reseller = Reseller(**fields, status=ResellerStatus.ACTIVE)
-        flush_or_conflict(db, reseller, "A dealer with this account reference already exists")
+        flush_or_conflict(db, reseller, f"{vocab.APartner} with this account reference already exists")
     else:
         reseller = _create_with_generated_ref(db, data, fields)
     if data.agreement:
@@ -120,7 +121,7 @@ def create_reseller(db: Session, actor: User, data: ResellerCreate) -> tuple[Res
         _add_shop(db, reseller, loc)
     db.flush()
     record_audit(db, actor_id=actor.id, action="reseller.create", entity_type="reseller", entity_id=reseller.id,
-                 reseller_id=reseller.id, summary=f"Created dealer {reseller.account_ref} {reseller.business_name}")
+                 reseller_id=reseller.id, summary=f"Created {vocab.partner} {reseller.account_ref} {reseller.business_name}")
     login = None
     if login_email:
         password = temporary_password()
@@ -145,7 +146,7 @@ def _create_with_generated_ref(db: Session, data: ResellerCreate, fields: dict) 
         fields["account_ref"] = refs.next_account_ref(db, data.business_name, city)
         reseller = Reseller(**fields, status=ResellerStatus.ACTIVE)
         try:
-            flush_or_conflict(db, reseller, "A dealer with this account reference already exists")
+            flush_or_conflict(db, reseller, f"{vocab.APartner} with this account reference already exists")
             return reseller
         except ConflictError:
             db.expunge(reseller)
@@ -162,7 +163,7 @@ def update_reseller(db: Session, actor: User, reseller_id: int, data: ResellerUp
         setattr(reseller, k, v)
     db.flush()
     record_audit(db, actor_id=actor.id, action="reseller.update", entity_type="reseller", entity_id=reseller.id,
-                 reseller_id=reseller.id, summary=f"Updated dealer {reseller.account_ref}",
+                 reseller_id=reseller.id, summary=f"Updated {vocab.partner} {reseller.account_ref}",
                  details={k: str(v) for k, v in changes.items()})
     return reseller
 
@@ -286,7 +287,7 @@ def get_location_scoped(db: Session, user: User, location_id: int) -> Location:
 def get_consignment_location(db: Session, user: User, location_id: int) -> Location:
     loc = get_location_scoped(db, user, location_id)
     if loc.type != LocationType.CONSIGNMENT:
-        raise BusinessRuleError(f"{loc.code} is not a dealer consignment location")
+        raise BusinessRuleError(f"{loc.code} is not {vocab.aPartner} consignment location")
     return loc
 
 
@@ -296,7 +297,7 @@ def get_consignment_location(db: Session, user: User, location_id: int) -> Locat
 
 
 def list_prices(db: Session, user: User, reseller_id: int) -> list[tuple[CustomerPrice, str]]:
-    ensure_reseller_access(user, reseller_id, "Dealer")
+    ensure_reseller_access(user, reseller_id, vocab.Partner)
     rows = db.execute(
         select(CustomerPrice, Product.sku)
         .join(Product, Product.id == CustomerPrice.product_id)

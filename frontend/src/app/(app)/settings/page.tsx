@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { fmtDate } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import { branding } from "@/config/branding";
+import { vocab } from "@/lib/terms";
 
 interface Archive {
   value: number | null; unit: "days" | "months"; delete_after_archive_days: number;
@@ -87,7 +88,7 @@ function ArchiveForm({ data, onSaved, onRan }: { data: Archive; onSaved: (d: Arc
 
   return (
     <Card title="Drop-off photo archiving"
-      subtitle={`Photos taken when stock is handed to a dealer are archived after this period, then deleted ${data.delete_after_archive_days} days later. Who received the stock and the notes are always kept.`}>
+      subtitle={`Photos taken when stock is handed to ${vocab.aPartner} are archived after this period, then deleted ${data.delete_after_archive_days} days later. Who received the stock and the notes are always kept.`}>
       <Alert>{action.error}</Alert>
       <MetricStrip className="mb-4" items={[
         { label: "Active photos", value: data.active, hint: `${data.active_kb.toLocaleString()} KB` },

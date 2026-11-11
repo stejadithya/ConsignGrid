@@ -5,6 +5,7 @@
  */
 import type { Step } from "@/components/flow";
 import type { Sale, SaleLine } from "./types";
+import { vocab } from "@/lib/terms";
 
 export type BillingState = "NOT_INVOICED" | "INVOICE_DRAFTED" | "INVOICED";
 
@@ -88,7 +89,7 @@ export function nextStep(s: Sale, can: (permission: string) => boolean, isDealer
 
 /** How a sale was recorded, in plain words. CASH_SALE is shown as a non-consignment sale (D6; the code stays). */
 export function saleSourceLabel(source: string) {
-  return { RESELLER_REPORT: "Reported by the dealer", REP_VISIT: "Sales rep visit", STOCKTAKE: "Found in a stock check",
+  return { RESELLER_REPORT: `Reported by the ${vocab.partner}`, REP_VISIT: "Sales rep visit", STOCKTAKE: "Found in a stock check",
     CASH_SALE: NON_CONSIGNMENT_LABEL, OTHER: "Other" }[source] ?? source;
 }
 

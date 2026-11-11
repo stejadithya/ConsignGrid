@@ -8,6 +8,7 @@ import type { Reseller } from "@/lib/types";
 import { ProductSelect, shopText } from "./pickers";
 import { Alert, Badge, Button, DataTable, Field, Input, Modal, ProductCell, Select, Tabs, Textarea } from "./ui";
 import { branding } from "@/config/branding";
+import { vocab } from "@/lib/terms";
 
 export interface StockLine { product: number | ""; qty: string }
 
@@ -31,8 +32,8 @@ export function StockLinesEditor({ lines, onChange }: { lines: StockLine[]; onCh
         </div>
       ))}
       <div className="flex items-center justify-between">
-        <Button size="sm" onClick={() => onChange([...lines, { product: "", qty: "" }])}><Plus aria-hidden />Add tyre</Button>
-        <span className="text-label text-ink-secondary"><b className="num text-ink">{units}</b> tyre(s)</span>
+        <Button size="sm" onClick={() => onChange([...lines, { product: "", qty: "" }])}><Plus aria-hidden />Add {vocab.item}</Button>
+        <span className="text-label text-ink-secondary"><b className="num text-ink">{units}</b> {vocab.item}(s)</span>
       </div>
     </div>
   );
@@ -84,14 +85,14 @@ export function InitialStockPreview({ check }: { check: InitialStockCheck }) {
   const s = check.summary;
   return (
     <div className="space-y-2">
-      <div className="text-label"><b className="num">{s.valid}</b> row(s) ready · <b className="num">{s.units}</b> tyre(s)
+      <div className="text-label"><b className="num">{s.valid}</b> row(s) ready · <b className="num">{s.units}</b> {vocab.item}(s)
         {s.errors > 0 && <> · <span className="font-medium text-danger">{s.errors} row(s) with errors — fix them and choose the file again</span></>}</div>
       <DataTable label="Rows to import" search={false} rows={check.rows} rowKey={(r) => r.row} pageSize={20}
         columns={[
           { key: "r", header: "Row", cell: (r) => r.row },
-          { key: "t", header: "Tyre", className: "min-w-48 whitespace-normal", cell: (r) => <ProductCell name={r.tyre ?? "—"} sku={r.sku} /> },
+          { key: "t", header: vocab.Item, className: "min-w-48 whitespace-normal", cell: (r) => <ProductCell name={r.tyre ?? "—"} sku={r.sku} /> },
           { key: "q", header: "Qty", align: "right", cell: (r) => r.quantity || "—" },
-          { key: "s", header: "Shop", cell: (r) => <span className="sku text-label">{r.shop_code ?? "—"}</span> },
+          { key: "s", header: vocab.Site, cell: (r) => <span className="sku text-label">{r.shop_code ?? "—"}</span> },
           { key: "e", header: "Check", className: "min-w-48 whitespace-normal", cell: (r) => r.errors.length
             ? <span className="text-caption text-danger">{r.errors.join("; ")}</span> : <Badge value="ACTIVE" label="OK" /> },
         ]} />
@@ -113,19 +114,19 @@ export function InitialStockModal({ reseller, onClose, onDone }: { reseller: Res
   const excelFooter = !check
     ? <Button variant="primary" disabled={!file || action.busy} onClick={async () => { const c = await action.run(() => importInitialStock(reseller.id, file!, false)); if (c) setCheck(c); }}>{action.busy ? "Checking…" : "Check file"}</Button>
     : <Button variant="primary" disabled={!!check.summary.errors || !check.summary.valid || action.busy}
-        onClick={async () => { if (await action.run(() => importInitialStock(reseller.id, file!, true))) onDone(); }}>{action.busy ? "Importing…" : `Import ${check.summary.units} tyre(s)`}</Button>;
+        onClick={async () => { if (await action.run(() => importInitialStock(reseller.id, file!, true))) onDone(); }}>{action.busy ? "Importing…" : `Import ${check.summary.units} ${vocab.item}(s)`}</Button>;
   return (
     <Modal open wide title="Initial stock (backorder)" onClose={onClose}
-      description={`Tyres ${reseller.business_name} already holds from ${branding.companyName}, recorded once when they join the system. They become this dealer's consignment stock.`}
+      description={`${vocab.Items} ${reseller.business_name} already holds from ${branding.companyName}, recorded once when they join the system. They become this ${vocab.partner}'s consignment stock.`}
       footer={<><Button onClick={onClose}>Cancel</Button>
         {mode === "excel" ? excelFooter : <Button variant="primary" disabled={!ready || action.busy}
           onClick={async () => { if (await action.run(() => postInitialStock(reseller.id, Number(location), lines, notes))) onDone(); }}>
           {action.busy ? "Saving…" : "Add initial stock"}</Button>}</>}>
-      <Tabs active={mode} onChange={(m) => { setMode(m); action.setError(null); }} tabs={[{ id: "enter", label: "Enter tyres" }, { id: "excel", label: "Upload Excel" }]} />
+      <Tabs active={mode} onChange={(m) => { setMode(m); action.setError(null); }} tabs={[{ id: "enter", label: `Enter ${vocab.items}` }, { id: "excel", label: "Upload Excel" }]} />
       <Alert>{action.error}</Alert>
       {mode === "excel" ? <>
         <InitialStockFilePicker file={file} onChange={(f) => { setFile(f); setCheck(null); action.setError(null); }} />
-        <p className="text-caption text-ink-muted">Checking changes nothing. Shop code is optional when the dealer has one shop. Each shop gets one opening balance.</p>
+        <p className="text-caption text-ink-muted">Checking changes nothing. {vocab.Site} code is optional when the {vocab.partner} has one {vocab.site}. Each {vocab.site} gets one opening balance.</p>
         {check && <InitialStockPreview check={check} />}
       </> : <>
       {locations.length !== 1 && (

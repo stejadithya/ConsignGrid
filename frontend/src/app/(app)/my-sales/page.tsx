@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { fmtDate, todayIso } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 import type { Sale } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 type Preset = "today" | "week" | "month" | "last_month" | "year" | "custom";
 type Group = "day" | "week" | "month";
@@ -74,7 +75,7 @@ export default function MySalesPage() {
 
   return (
     <>
-      <PageHeader title="My sales" subtitle="Tyres you have sold in the period you choose. Pick a quick period or select dates on the calendar."
+      <PageHeader title="My sales" subtitle={`${vocab.Items} you have sold in the period you choose. Pick a quick period or select dates on the calendar.`}
         actions={can("sales.record") && <ButtonLink href="/sales" variant="primary"><ShoppingCart aria-hidden />Report a sale</ButtonLink>} />
       <Alert>{error}</Alert>
       <Card className="mb-4">
@@ -93,16 +94,16 @@ export default function MySalesPage() {
         </div>
       </Card>
       <MetricStrip items={[
-        { label: "Tyres sold", value: units.toLocaleString(), tone: "accent" },
+        { label: `${vocab.Items} sold`, value: units.toLocaleString(), tone: "accent" },
         { label: "Sales", value: sales.length },
-        { label: "Different tyres", value: byTyre.length },
+        { label: `Different ${vocab.items}`, value: byTyre.length },
       ]} />
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
-        <Card title="By tyre" padded={false}>
+        <Card title={`By ${vocab.item}`} padded={false}>
           <DataTable search={false} rows={data ? byTyre : null} rowKey={(r) => r.product_id} pageSize={20}
             empty="No sales in this period"
             columns={[
-              { key: "p", header: "Tyre", cell: (r) => <ProductCell name={r.name} sku={r.sku} /> },
+              { key: "p", header: vocab.Item, cell: (r) => <ProductCell name={r.name} sku={r.sku} /> },
               { key: "u", header: "Sold", align: "right", cell: (r) => <span className="num font-semibold">{r.units}</span> },
             ]} />
         </Card>
@@ -114,16 +115,16 @@ export default function MySalesPage() {
             columns={[
               { key: "p", header: group === "day" ? "Day" : group === "week" ? "Week" : "Month", cell: (r) => r.label },
               { key: "s", header: "Sales", align: "right", cell: (r) => r.sales },
-              { key: "u", header: "Tyres", align: "right", cell: (r) => <span className="num font-semibold">{r.units}</span> },
+              { key: "u", header: vocab.Items, align: "right", cell: (r) => <span className="num font-semibold">{r.units}</span> },
             ]} />
         </Card>
       </div>
       <Card title="Sales in this period" className="mt-4" padded={false}>
-        <DataTable mobile="cards" label="My sales" rows={data} rowKey={(s) => s.id} searchPlaceholder="Search sale or tyre…" empty="No sales in this period"
+        <DataTable mobile="cards" label="My sales" rows={data} rowKey={(s) => s.id} searchPlaceholder={`Search sale or ${vocab.item}…`} empty="No sales in this period"
           columns={[
             { key: "n", mobile: "primary", header: "Sale", value: (s) => s.number, cell: (s) => <Link className="link" href={`/sales?sale=${s.id}`}>{s.number}</Link> },
             { key: "d", mobile: "field", mobileOrder: 1, header: "Date", value: (s) => s.sale_date, cell: (s) => fmtDate(s.sale_date) },
-            { key: "t", mobile: "field", mobileOrder: 2, header: "Tyres", className: "min-w-64 whitespace-normal", value: (s) => s.lines.map((l) => `${l.sku} ${l.product_name}`).join(" "),
+            { key: "t", mobile: "field", mobileOrder: 2, header: vocab.Items, className: "min-w-64 whitespace-normal", value: (s) => s.lines.map((l) => `${l.sku} ${l.product_name}`).join(" "),
               cell: (s) => <div className="space-y-0.5 text-label">{s.lines.map((l) => <div key={l.id}>{l.chargeable_qty} × {l.product_name ?? l.sku} <span className="sku text-label text-ink-secondary">{l.sku}</span></div>)}</div> },
             { key: "q", mobile: "field", mobileOrder: 3, header: "Units", align: "right", value: (s) => s.total_qty, cell: (s) => s.total_qty },
             { key: "src", mobile: "status", header: "Source", value: (s) => s.source, cell: (s) => <Badge value={s.source} /> },

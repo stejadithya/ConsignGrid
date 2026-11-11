@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from app.core.errors import NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.permissions import P
 from app.modules.customers.models import LocationType
 from app.modules.identity.deps import DB, require
@@ -37,14 +38,14 @@ def availability_check(data: AvailabilityCheckIn, db: DB, user: Reader):
     """For the tyres on a request: warehouse stock, what this dealer already holds, what other dealers could spare.
     Staff only: dealers never see warehouse figures or other dealers."""
     if user.is_reseller_user:
-        raise PermissionDeniedError("Not available to dealer users")
+        raise PermissionDeniedError(f"Not available to {vocab.partner} users")
     rows = availability_check_service.check(db, data.product_ids, data.dealer_location_id)
     return [AvailabilityCheckOut(**a.__dict__) for a in rows]
 
 
 def _staff_only(user: User) -> None:
     if user.is_reseller_user:
-        raise PermissionDeniedError("Not available to dealer users")
+        raise PermissionDeniedError(f"Not available to {vocab.partner} users")
 
 
 @router.get("/balances", response_model=list[BalanceOut])

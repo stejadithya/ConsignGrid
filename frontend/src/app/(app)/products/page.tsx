@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth";
 import { useApi } from "@/lib/hooks";
 import type { Product } from "@/lib/types";
 import { branding } from "@/config/branding";
+import { vocab } from "@/lib/terms";
 
 interface Demand { product_id: number; awaiting_supply: number; warehouse_available: number }
 interface ConsignmentReport { rows: { product_id: number; on_hand: number }[] }
@@ -54,7 +55,7 @@ export default function ProductsPage() {
 
   const stockCols: Column<Product>[] = canStock ? [
     { key: "wh", header: "Warehouse", align: "right", mobile: "field", mobileSort: "Warehouse stock", value: (p) => whMap.get(p.id) ?? 0, cell: (p) => <Qty value={whMap.get(p.id) ?? 0} zeroMuted={false} tone={(whMap.get(p.id) ?? 0) === 0 ? "danger" : undefined} /> },
-    { key: "cons", header: "Consignment", align: "right", mobile: "field", mobileLabel: "At dealers", value: (p) => consMap.get(p.id) ?? 0, cell: (p) => <Qty value={consMap.get(p.id) ?? 0} /> },
+    { key: "cons", header: "Consignment", align: "right", mobile: "field", mobileLabel: `At ${vocab.partners}`, value: (p) => consMap.get(p.id) ?? 0, cell: (p) => <Qty value={consMap.get(p.id) ?? 0} /> },
     { key: "back", header: "Backorder", align: "right", mobile: "field", mobileSort: true, value: (p) => backMap.get(p.id) ?? 0, cell: (p) => <Qty value={backMap.get(p.id) ?? 0} tone="warn" /> },
   ] : [];
 

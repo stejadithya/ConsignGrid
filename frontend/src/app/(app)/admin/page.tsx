@@ -12,6 +12,7 @@ import { fmtDateTime, humanize } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import { ROLE_LABELS } from "@/config/roles";
 import type { AuditEvent, Location, PartnerKey, Reconciliation, RoleCode, TaxRate, UserOut } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 const ALL_ROLES = Object.keys(ROLE_LABELS) as RoleCode[];
 
@@ -78,8 +79,8 @@ function Users() {
         { key: "e", mobile: "field", mobileOrder: 1, header: "Email", value: (u) => u.email, cell: (u) => u.email },
         { key: "p", header: "Phone", value: (u) => u.phone ?? "", cell: (u) => u.phone ?? "—" },
         { key: "r", mobile: "secondary", header: "Role", value: (u) => u.role, cell: (u) => ROLE_LABELS[u.role as RoleCode] ?? humanize(u.role) },
-        { key: "rs", mobile: "field", mobileOrder: 2, header: "Dealer", cell: (u) => (u.reseller_id ? resellerName(u.reseller_id)
-          : u.role === "SALES_REP" ? <span className="text-ink-secondary">Looks after {dealersOf(u.id).length} dealer{dealersOf(u.id).length === 1 ? "" : "s"}</span> : "—") },
+        { key: "rs", mobile: "field", mobileOrder: 2, header: vocab.Partner, cell: (u) => (u.reseller_id ? resellerName(u.reseller_id)
+          : u.role === "SALES_REP" ? <span className="text-ink-secondary">Looks after {dealersOf(u.id).length} {vocab.partner}{dealersOf(u.id).length === 1 ? "" : "s"}</span> : "—") },
         { key: "s", mobile: "status", header: "Status", cell: (u) => locked(u)
           ? <Badge value="ON_HOLD" label="Locked" />
           : <Badge value={u.is_active ? "ACTIVE" : "CLOSED"} label={u.is_active ? "Active" : "Inactive"} /> },
@@ -100,9 +101,9 @@ function Users() {
         {edit && <div className="space-y-3">
           {!edit.id && <Field label="Email" required>{(id) => <Input id={id} type="email" value={edit.email ?? ""} onChange={(e) => setEdit({ ...edit, email: e.target.value })} />}</Field>}
           <Field label="Full name" required>{(id) => <Input id={id} value={edit.full_name ?? ""} onChange={(e) => setEdit({ ...edit, full_name: e.target.value })} />}</Field>
-          <Field label="Phone" hint="Optional. Shown to dealers as a contact on their stock checks.">{(id) => <Input id={id} type="tel" value={edit.phone ?? ""} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} />}</Field>
+          <Field label="Phone" hint={`Optional. Shown to ${vocab.partners} as a contact on their stock checks.`}>{(id) => <Input id={id} type="tel" value={edit.phone ?? ""} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} />}</Field>
           <Field label="Role">{(id) => <Select id={id} value={edit.role} onChange={(e) => setEdit({ ...edit, role: e.target.value })} options={ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))} />}</Field>
-          {edit.role === "RESELLER" && <Field label="Dealer" required hint="Dealer users only ever see this dealer's data.">{(id) => <ResellerSelect id={id} value={edit.reseller_id ?? ""} onChange={(v) => setEdit({ ...edit, reseller_id: v === "" ? null : v })} placeholder="Select…" />}</Field>}
+          {edit.role === "RESELLER" && <Field label={vocab.Partner} required hint={`${vocab.Partner} users only ever see this ${vocab.partner}'s data.`}>{(id) => <ResellerSelect id={id} value={edit.reseller_id ?? ""} onChange={(v) => setEdit({ ...edit, reseller_id: v === "" ? null : v })} placeholder="Select…" />}</Field>}
           <Field label={edit.id ? "New password (leave blank to keep)" : "Password"} required={!edit.id} hint="10 to 72 characters; any letters, numbers, spaces or symbols. Setting a password also unlocks the account.">{(id) => <Input id={id} type="password" autoComplete="new-password" value={edit.password ?? ""} onChange={(e) => setEdit({ ...edit, password: e.target.value })} />}</Field>
           {!edit.id && edit.role !== "RESELLER" && (
             <fieldset className="rounded-control border border-line p-3">
@@ -115,19 +116,19 @@ function Users() {
                 <Field label={`Who (${ROLE_LABELS[edit.role as RoleCode] ?? "same role"})`} required>
                   {(id) => <Select id={id} value={replaces.user} placeholder={colleagues.length ? "Choose…" : "No one with this role"}
                     onChange={(e) => setReplaces({ ...replaces, user: e.target.value ? Number(e.target.value) : "", dealers: [] })}
-                    options={colleagues.map((u) => ({ value: u.id, label: `${u.full_name}${u.role === "SALES_REP" ? ` · looks after ${dealersOf(u.id).length} dealer(s)` : ""}` }))} />}
+                    options={colleagues.map((u) => ({ value: u.id, label: `${u.full_name}${u.role === "SALES_REP" ? ` · looks after ${dealersOf(u.id).length} ${vocab.partner}(s)` : ""}` }))} />}
                 </Field>
                 <div className="space-y-2 text-body">
                   <label className="flex items-start gap-2"><input type="radio" name="replace-mode" className="mt-1 size-4 accent-ink" checked={replaces.mode === "TAKE_OVER"}
                     onChange={() => setReplaces({ ...replaces, mode: "TAKE_OVER" })} />
-                    <span><b className="font-medium">Take over everything</b> (the other person is leaving): their dealers, hand-overs and approvals move to the new person, and the other login is deactivated.</span></label>
+                    <span><b className="font-medium">Take over everything</b> (the other person is leaving): their {vocab.partners}, hand-overs and approvals move to the new person, and the other login is deactivated.</span></label>
                   <label className="flex items-start gap-2"><input type="radio" name="replace-mode" className="mt-1 size-4 accent-ink" checked={replaces.mode === "SHARE"}
                     onChange={() => setReplaces({ ...replaces, mode: "SHARE" })} />
-                    <span><b className="font-medium">Work alongside</b>: choose the dealers to share with the new person.</span></label>
+                    <span><b className="font-medium">Work alongside</b>: choose the {vocab.partners} to share with the new person.</span></label>
                 </div>
                 {replaces.mode === "SHARE" && replaces.user !== "" && (
                   <div className="max-h-48 space-y-1 overflow-y-auto rounded-control border border-line p-2 text-label">
-                    {dealersOf(replaces.user).length === 0 && <p className="text-ink-muted">They don&apos;t look after any dealers.</p>}
+                    {dealersOf(replaces.user).length === 0 && <p className="text-ink-muted">They don&apos;t look after any {vocab.partners}.</p>}
                     {dealersOf(replaces.user).map((r) => (
                       <label key={r.id} className="flex items-center gap-2">
                         <input type="checkbox" className="size-4 accent-ink" checked={replaces.dealers.includes(r.id)}
@@ -165,7 +166,7 @@ function HandoverDialog({ from, colleagues, dealers, onClose, onDone }: {
   const ready = to !== "" && reason.trim().length >= 3 && (all || chosen.length > 0);
   return (
     <Modal open title={`Hand over from ${from.full_name}`} onClose={done ? onDone : onClose}
-      description="Their dealers, the deliveries and transfers they are carrying, and approvals waiting for them move to the person you choose. Nothing is lost."
+      description={`Their ${vocab.partners}, the deliveries and transfers they are carrying, and approvals waiting for them move to the person you choose. Nothing is lost.`}
       footer={done ? <Button variant="primary" onClick={onDone}>Close</Button> : <><Button onClick={onClose}>Cancel</Button>
         <Button variant="primary" disabled={action.busy || !ready} onClick={async () => {
           const r = await action.run(() => api.post<{ summary: string; deactivated: boolean }>(`/users/${from.id}/handover`, {
@@ -180,9 +181,9 @@ function HandoverDialog({ from, colleagues, dealers, onClose, onDone }: {
         </Field>
         <div className="space-y-2 text-body">
           <label className="flex items-center gap-2"><input type="radio" name="handover-scope" className="size-4 accent-ink" checked={all} onChange={() => setAll(true)} />
-            Everything{from.role === "SALES_REP" ? ` (${dealers.length} dealer${dealers.length === 1 ? "" : "s"}, hand-overs and approvals)` : " (hand-overs and approvals)"}</label>
+            Everything{from.role === "SALES_REP" ? ` (${dealers.length} ${vocab.partner}${dealers.length === 1 ? "" : "s"}, hand-overs and approvals)` : " (hand-overs and approvals)"}</label>
           {dealers.length > 0 && <label className="flex items-center gap-2"><input type="radio" name="handover-scope" className="size-4 accent-ink" checked={!all} onChange={() => setAll(false)} />
-            Only some dealers (share the work)</label>}
+            Only some {vocab.partners} (share the work)</label>}
         </div>
         {!all && (
           <div className="max-h-48 space-y-1 overflow-y-auto rounded-control border border-line p-2 text-label">
@@ -211,7 +212,7 @@ function TaxRates() {
   const action = useAction();
   return (
     <Card padded={false} title="Tax rates" actions={can("pricing.write") && <Button size="sm" onClick={() => setEdit({ is_default: false, is_active: true, rate: "0.1000" })}>New rate</Button>}>
-      <p className="px-4 pt-3 text-body text-ink-secondary">Rates are configuration, not code. The default applies unless a dealer has an override. Sales and invoices store the rate used at the time.</p>
+      <p className="px-4 pt-3 text-body text-ink-secondary">Rates are configuration, not code. The default applies unless {vocab.aPartner} has an override. Sales and invoices store the rate used at the time.</p>
       <DataTable search={false} rows={data} rowKey={(t) => t.id} onRowClick={can("pricing.write") ? (t) => setEdit({ ...t }) : undefined} columns={[
         { key: "c", header: "Code", cell: (t) => t.code }, { key: "n", header: "Name", cell: (t) => t.name },
         { key: "r", header: "Rate", align: "right", cell: (t) => `${(Number(t.rate) * 100).toFixed(2)}%` },
@@ -332,7 +333,7 @@ function WebsiteAccess() {
   return (
     <>
       <Card padded={false} title="Website access"
-        subtitle="Keys for the customer website's server. With a key it can read whether each SKU is In stock, Low or Out in the warehouse. It never sees quantities, dealers or prices."
+        subtitle={`Keys for the customer website's server. With a key it can read whether each SKU is In stock, Low or Out in the warehouse. It never sees quantities, ${vocab.partners} or prices.`}
         actions={<Button variant="primary" size="sm" onClick={() => { setName("Customer website"); action.setError(null); setCreating(true); }}>New key</Button>}>
         <Alert>{error}</Alert>
         <DataTable mobile="cards" label="Website access keys" search={false} rows={data} rowKey={(k) => k.id} empty="No keys yet"

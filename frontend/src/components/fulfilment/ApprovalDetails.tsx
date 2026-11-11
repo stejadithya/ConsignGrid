@@ -4,6 +4,7 @@
 
 import { useAuth } from "@/lib/auth";
 import { Field, Input, Select, Textarea } from "../ui";
+import { vocab } from "@/lib/terms";
 
 export type ApprovalMethod = "PHONE" | "IN_PERSON" | "EMAIL" | "TEXT" | "STANDARD";
 export interface Approval { method: ApprovalMethod | ""; contact: string; comments: string }
@@ -36,7 +37,7 @@ export function ApprovalFields({ value, onChange }: { value: Approval; onChange:
       <Field label="How was it approved" required>{(id) => <Select id={id} value={value.method} placeholder="Choose…" required
         onChange={(e) => onChange({ ...value, method: e.target.value as ApprovalMethod })} options={APPROVAL_METHODS} />}</Field>
       {value.method !== "STANDARD" && (
-        <Field label="Spoke to" required hint="Who agreed it, e.g. the dealer's owner">{(id) => <Input id={id} value={value.contact} required
+        <Field label="Spoke to" required hint={`Who agreed it, e.g. the ${vocab.partner}'s owner`}>{(id) => <Input id={id} value={value.contact} required
           onChange={(e) => onChange({ ...value, contact: e.target.value })} />}</Field>
       )}
       <div className="sm:col-span-2">

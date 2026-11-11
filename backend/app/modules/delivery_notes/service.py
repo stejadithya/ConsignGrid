@@ -17,6 +17,7 @@ from fpdf import FPDF
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.industry import vocab
 from app.modules.catalogue.models import Product
 from app.modules.customers.models import Location, Reseller
 from app.modules.identity.models import User
@@ -86,7 +87,7 @@ def note_data_for_transfer(db: Session, t: Transfer) -> dict:
         "timezone": settings.business_timezone, "reference": "",
         "method": ("Sales representative" + (f" ({carried.full_name})" if carried else "")
                    if t.shipping_method == "SALES_REP" else f"Courier: {t.carrier_reference or '—'}"
-                   if t.shipping_method == "COURIER" else "Transfer between dealers"),
+                   if t.shipping_method == "COURIER" else f"Transfer between {vocab.partners}"),
         "tracking": t.tracking_number or "", "lines": lines,
         "total_delivered": sum(ln["delivered"] for ln in lines), "total_shipped": sum(ln["shipped"] for ln in lines),
         "discrepancy_days": settings.delivery_discrepancy_days,
@@ -135,7 +136,7 @@ def render_pdf(data: dict) -> bytes:
     widths = (100, 34, 23, 23)
     pdf.set_fill_color(240, 240, 240)
     pdf.set_font("Helvetica", "B", 10)
-    for w, h in zip(widths, ("Tyre", "SKU", "Shipped", "Delivered"), strict=True):
+    for w, h in zip(widths, (vocab.Item, "SKU", "Shipped", "Delivered"), strict=True):
         pdf.cell(w, 8, h, border=1, fill=True, align="R" if h in ("Shipped", "Delivered") else "L")
     pdf.ln()
     pdf.set_font("Helvetica", "", 10)
@@ -146,7 +147,7 @@ def render_pdf(data: dict) -> bytes:
         pdf.cell(widths[3], 7, str(ln["delivered"]), border=1, align="R")
         pdf.ln()
     pdf.set_font("Helvetica", "B", 10)
-    pdf.cell(widths[0] + widths[1], 8, "Total tyres", border=1)
+    pdf.cell(widths[0] + widths[1], 8, f"Total {vocab.items}", border=1)
     pdf.cell(widths[2], 8, str(data["total_shipped"]), border=1, align="R")
     pdf.cell(widths[3], 8, str(data["total_delivered"]), border=1, align="R")
     pdf.ln(14)
@@ -172,14 +173,14 @@ def render_pdf(data: dict) -> bytes:
 def render_email(data: dict) -> tuple[str, str, str]:
     """(subject, plain text, HTML) for the standard delivery email."""
     when = f"{data['delivered_date']}{' at ' + data['delivered_time'] if data['delivered_time'] else ''}"
-    subject = (f"{data['company']} delivery {data['number']}: {data['total_delivered']} tyre(s) delivered on "
+    subject = (f"{data['company']} delivery {data['number']}: {data['total_delivered']} {vocab.item}(s) delivered on "
                f"{data['delivered_date']}")
     greeting = f"Dear {data['contact'] or data['reseller']},"
     rows_txt = "\n".join(f"  - {ln['delivered']} x {ln['tyre']} (SKU {ln['sku']})" for ln in data["lines"])
     closing = (f"If you notice any discrepancy with this delivery, please contact us within {data['discrepancy_days']} "
                "days of the delivery date.")
-    text = (f"{greeting}\n\nThe following tyres were delivered to {data['reseller']} ({data['location']}) on {when}.\n\n"
-            f"{rows_txt}\n\nTotal delivered: {data['total_delivered']} tyre(s)\nShipped by: {data['method']}\n"
+    text = (f"{greeting}\n\nThe following {vocab.items} were delivered to {data['reseller']} ({data['location']}) on {when}.\n\n"
+            f"{rows_txt}\n\nTotal delivered: {data['total_delivered']} {vocab.item}(s)\nShipped by: {data['method']}\n"
             + (f"Received by: {data['received_by']}\n" if data.get("received_by") else "")
             + (f"Tracking number: {data['tracking']}\n" if data["tracking"] else "")
             + f"\n{closing}\n\nThe delivery note is attached as a PDF.\n\nKind regards,\n{data['company']}\n")
@@ -192,9 +193,9 @@ def render_email(data: dict) -> tuple[str, str, str]:
         for ln in data["lines"])
     html = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#18181b;max-width:640px">
 <p>{escape(greeting)}</p>
-<p>The following tyres were delivered to <b>{e['reseller']}</b> ({e['location']}) on <b>{escape(when)}</b>.</p>
+<p>The following {vocab.items} were delivered to <b>{e['reseller']}</b> ({e['location']}) on <b>{escape(when)}</b>.</p>
 <table style="border-collapse:collapse;width:100%;margin:12px 0">
-<tr style="background:#f4f4f5"><th style="padding:6px 10px;text-align:left">Tyre</th>
+<tr style="background:#f4f4f5"><th style="padding:6px 10px;text-align:left">{vocab.Item}</th>
 <th style="padding:6px 10px;text-align:left">SKU</th>
 <th style="padding:6px 10px;text-align:right">Delivered</th></tr>{rows_html}
 <tr><td colspan="2" style="padding:6px 10px;font-weight:bold">Total delivered</td>
@@ -248,7 +249,7 @@ def _send(record: Delivery | Transfer, data: dict) -> str:
     now = datetime.now(UTC)
     to = (data["email"] or "").strip()
     if not to:
-        delivery.note_email_error = "The dealer has no email address"
+        delivery.note_email_error = f"The {vocab.partner} has no email address"
         return "no_email"
     if not email_configured():
         delivery.note_email_error = "Email sending is not set up yet (SMTP settings); download the PDF instead"

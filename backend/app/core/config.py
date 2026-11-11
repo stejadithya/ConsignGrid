@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     # Empty = app_display_name.
     company_name: str = ""
     support_email: str = ""
+    # Industry Pack (app/core/industry.py): the words people read (tyre/dealer/shop, device/hospital/location, …).
+    industry_pack: str = "tyres"
+    # Rename single words without a new pack, e.g. TERMS_OVERRIDES='{"partner": "stockist", "partners": "stockists"}'.
+    terms_overrides: dict[str, str] = Field(default_factory=dict)
 
     database_url: str = "postgresql+psycopg://tyreworld:tyreworld@localhost:5432/tyreworld"
     # Serverless hosts (e.g. Vercel functions): open a connection per request instead of keeping a pool.
@@ -93,6 +97,15 @@ class Settings(BaseSettings):
         self.company_name = self.company_name.strip() or self.app_display_name
         self.invoice_issuer_name = self.invoice_issuer_name.strip() or self.company_name
         return self
+
+    @field_validator("industry_pack")
+    @classmethod
+    def _known_pack(cls, v: str) -> str:
+        from app.core.industry import PACKS
+
+        if v not in PACKS:
+            raise ValueError(f"INDUSTRY_PACK must be one of: {', '.join(sorted(PACKS))}")
+        return v
 
     @property
     def file_prefix(self) -> str:

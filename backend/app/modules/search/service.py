@@ -11,6 +11,7 @@ from datetime import date, datetime
 from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session
 
+from app.core.industry import vocab
 from app.core.permissions import P, role_has
 from app.modules.catalogue.models import Product
 from app.modules.catalogue.service import _compact as compact
@@ -122,7 +123,7 @@ def _documents(db: Session, user: User, key: str) -> list[Hit]:
 
         def transfer_hit(t: Transfer) -> Hit:
             if own:   # a dealer sees their own side only; the other dealer is never named
-                sub = "Coming to you" if t.destination_reseller_id == own else "Going to another dealer"
+                sub = "Coming to you" if t.destination_reseller_id == own else f"Going to another {vocab.partner}"
             else:
                 sub = f"{names.get(t.source_reseller_id, 'Source not chosen')} → {names.get(t.destination_reseller_id, '')}"
             return Hit("TRANSFER", "Transfer", t.id, t.number, sub, t.status, t.requested_at, f"/transfers/{t.id}",
@@ -192,7 +193,7 @@ def _dealers(db: Session, user: User, query: str) -> list[Hit]:
             Reseller.business_name, Reseller.trading_name, Reseller.account_ref, Reseller.contact_name,
             Reseller.phone, Reseller.email)), Reseller.id.in_(shops)))
     rows = db.execute(q.order_by(Reseller.business_name).limit(PER_GROUP)).scalars().all()
-    return [Hit("DEALER", "Dealer", r.id, r.business_name,
+    return [Hit("DEALER", vocab.Partner, r.id, r.business_name,
                 " · ".join(x for x in (r.account_ref, r.contact_name, r.phone) if x), r.status, None,
                 f"/resellers/{r.id}") for r in rows]
 
@@ -204,7 +205,7 @@ def _tyres(db: Session, user: User, query: str) -> list[Hit]:
     for token in search_tokens(query):
         q = q.where(or_(*(compact(cast(f, String)).like(f"%{token}%") for f in tyre_fields())))
     rows = db.execute(q.order_by(Product.sku).limit(PER_GROUP)).scalars().all()
-    return [Hit("TYRE", "Tyre", p.id, p.display_name, p.sku, None, None,
+    return [Hit("TYRE", vocab.Item, p.id, p.display_name, p.sku, None, None,
                 f"/products/{p.id}" if not user.is_reseller_user else f"/consignment?sku={p.sku}") for p in rows]
 
 

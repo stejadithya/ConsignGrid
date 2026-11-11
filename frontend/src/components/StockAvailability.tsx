@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useProductIndex } from "./pickers";
 import { Alert, Card, cx, ProductCell } from "./ui";
+import { vocab } from "@/lib/terms";
 
 export interface Availability {
   product_id: number;
@@ -49,7 +50,7 @@ export function StockAvailability({ productIds, dealerLocationId, requested, tit
   if (!staff || !ids.length) return null;
   const rows = state.key === key ? state.rows : null;
   return (
-    <Card title={title} subtitle="Only the tyres on this request" padded={false}>
+    <Card title={title} subtitle={`Only the ${vocab.items} on this request`} padded={false}>
       <Alert>{state.key === key ? state.error : null}</Alert>
       {!rows && !state.error && <div className="px-5 py-4 text-label text-ink-muted">Checking stock…</div>}
       {rows && (
@@ -60,7 +61,7 @@ export function StockAvailability({ productIds, dealerLocationId, requested, tit
             return (
               <li key={r.product_id} className="grid gap-x-6 gap-y-1 px-5 py-3 text-label sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]" data-testid="availability-row">
                 <div className="min-w-0">
-                  <ProductCell name={byId.get(r.product_id)?.display_name ?? `Tyre #${r.product_id}`} sku={byId.get(r.product_id)?.sku} />
+                  <ProductCell name={byId.get(r.product_id)?.display_name ?? `${vocab.Item} #${r.product_id}`} sku={byId.get(r.product_id)?.sku} />
                   {want !== undefined && <div className="text-caption text-ink-muted">Requested: <b className="num font-medium text-ink">{want}</b></div>}
                 </div>
                 <div>
@@ -72,13 +73,13 @@ export function StockAvailability({ productIds, dealerLocationId, requested, tit
                 </div>
                 <div>
                   {r.at_this_location
-                    ? <><span className="text-ink-muted">Already at this dealer: </span><b className="num font-medium">{r.at_this_location.on_hand}</b>
+                    ? <><span className="text-ink-muted">Already at this {vocab.partner}: </span><b className="num font-medium">{r.at_this_location.on_hand}</b>
                         {r.dealer_total_on_hand !== null && r.dealer_total_on_hand !== r.at_this_location.on_hand &&
-                          <span className="text-ink-muted"> (all shops: {r.dealer_total_on_hand})</span>}</>
+                          <span className="text-ink-muted"> (all {vocab.sites}: {r.dealer_total_on_hand})</span>}</>
                     : <span className="text-ink-muted">—</span>}
                 </div>
-                <div><span className="text-ink-muted">Other dealers: </span><b className="num font-medium">{r.other_dealers.available}</b>
-                  {r.other_dealers.locations > 0 && <span className="text-ink-muted"> at {r.other_dealers.locations} shop{r.other_dealers.locations === 1 ? "" : "s"}</span>}</div>
+                <div><span className="text-ink-muted">Other {vocab.partners}: </span><b className="num font-medium">{r.other_dealers.available}</b>
+                  {r.other_dealers.locations > 0 && <span className="text-ink-muted"> at {r.other_dealers.locations} {vocab.site}{r.other_dealers.locations === 1 ? "" : "s"}</span>}</div>
               </li>
             );
           })}

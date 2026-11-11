@@ -26,6 +26,7 @@ import { fmtDate, fmtDateTime } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Delivery, StockRequestDetail, StockRequestLine, StockRequestStatus } from "@/lib/types";
 import { TyreLabel } from "@/components/pickers";
+import { vocab } from "@/lib/terms";
 
 const FULFILMENT: StockRequestStatus[] = ["APPROVED", "PARTIALLY_APPROVED", "READY_FOR_SHIPMENT", "SHIPPED", "DELIVERED"];
 const ORDER: StockRequestStatus[] = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "READY_FOR_SHIPMENT", "SHIPPED", "DELIVERED"];
@@ -173,7 +174,7 @@ export default function StockRequestPage() {
         requested={Object.fromEntries(r.lines.map((l) => [l.product_id, l.qty_requested]))} /></div>}
 
       <Card title="Lines" padded={false} className="mb-4">
-        <DataTable mobile="cards" label="Requested tyres" search={false} rows={r.lines} rowKey={(l) => l.id} columns={[
+        <DataTable mobile="cards" label={`Requested ${vocab.items}`} search={false} rows={r.lines} rowKey={(l) => l.id} columns={[
           { key: "p", mobile: "primary" as const, header: "SKU", className: "min-w-56 whitespace-normal", cell: (l) => (
             <div>
               <div className="flex items-center gap-1"><ProductCell sku={l.sku} name={l.product_name} /><StockOrigin locationId={r.location_id} productId={l.product_id} /></div>
@@ -182,18 +183,18 @@ export default function StockRequestPage() {
               {l.notes && <div className="mt-0.5 text-caption text-ink-muted">{l.notes}</div>}
               {l.decision_notes && <div className="mt-0.5 text-caption text-ink-secondary">Decision: {l.decision_notes}</div>}
               {!!l.qty_arranging && (staff
-                ? <div className="mt-0.5 text-caption text-ink-secondary">Being arranged from another dealer: <b className="num">{l.qty_arranging}</b>
+                ? <div className="mt-0.5 text-caption text-ink-secondary">Being arranged from another {vocab.partner}: <b className="num">{l.qty_arranging}</b>
                     {l.arranging_transfer_id && <> · <Link className="link" href={`/transfers/${l.arranging_transfer_id}`}>{l.arranging_transfer_number}</Link></>}</div>
                 : <ArrangingNote />)}
               {staff && (l.covering_transfers ?? []).map((t) => (
-                <div key={t.id} className="mt-0.5 text-caption text-ink-secondary">Arranged from another dealer: <b className="num">{t.quantity}</b> ·{" "}
+                <div key={t.id} className="mt-0.5 text-caption text-ink-secondary">Arranged from another {vocab.partner}: <b className="num">{t.quantity}</b> ·{" "}
                   <Link className="link" href={`/transfers/${t.id}`}>{t.number}</Link> <Badge value={t.status} /></div>
               ))}
               {staff && can("transfer.request") && l.qty_backorder_open > 0 && l.replenishment_request_id
                 && !(l.covering_transfers ?? []).some((t) => ["REQUESTED", "APPROVED", "IN_TRANSIT"].includes(t.status)) && (
                 <ButtonLink size="sm" variant="ghost" className="mt-1" href={`/transfers/new?${new URLSearchParams({ destination: String(r.location_id),
                   product: String(l.product_id), qty: String(l.qty_backorder_open), request: String(l.replenishment_request_id),
-                  reason: `Rest of ${r.number}: arranged from another dealer` })}`}>
+                  reason: `Rest of ${r.number}: arranged from another ${vocab.partner}` })}`}>
                   <ArrowLeftRight aria-hidden />Cover with a transfer<span className="sr-only"> for {l.sku}</span></ButtonLink>
               )}
             </div>
@@ -226,7 +227,7 @@ export default function StockRequestPage() {
             <Card key={d.id} title={<span className="flex items-center gap-2">Shipment {d.number} <Badge value={d.status} /></span>}
               actions={d.status === "IN_TRANSIT" && can("delivery.confirm") && (canConfirmCarried(user, d.shipping_method === "SALES_REP" ? d.carried_by_user_id : null)
                 ? <Button size="sm" variant="primary" className={cx(confirmInBar && "max-lg:hidden")} onClick={() => setDialog({ confirm: d })}>Confirm delivery</Button>
-                : <span className="text-caption text-ink-muted">To be confirmed by the dealer or {d.carried_by}</span>)}>
+                : <span className="text-caption text-ink-muted">To be confirmed by the {vocab.partner} or {d.carried_by}</span>)}>
               <DefinitionList columns={1} items={[
                 ["Shipped with", d.shipping_method === "SALES_REP" ? `Sales representative · ${d.carried_by ?? ""}` : `Courier · ${d.carrier_reference ?? "—"}`],
                 ["Tracking number", d.tracking_number], ["Ship to", d.shipping_address],
@@ -301,7 +302,7 @@ export default function StockRequestPage() {
         message="The warehouse can decide this request again." onClose={() => { setDialog(null); action.setError(null); }}
         onConfirm={() => act("/hand-back", { note: null })} />
       <ConfirmDialog open={dialog === "reject"} title={`Reject ${r.number}`} danger requireReason busy={action.busy} error={action.error}
-        confirmLabel="Reject request" message="Nothing is reserved. The requester and the dealer are notified with your reason."
+        confirmLabel="Reject request" message={`Nothing is reserved. The requester and the ${vocab.partner} are notified with your reason.`}
         onClose={() => { setDialog(null); action.setError(null); }} onConfirm={(reason) => act("/reject", { reason })} />
       <ConfirmDialog open={dialog === "cancel"} title={`Cancel ${r.number}`} requireReason busy={action.busy} error={action.error}
         confirmLabel="Cancel request" message="The request is withdrawn before any decision. It stays in the history."
@@ -344,7 +345,7 @@ function DecisionModal({ r, busy, error, onClose, onSubmit }: ModalProps<unknown
 
   if (step === "approval") {
     return (
-      <Modal open title="Approval details" description={`${verb}: ${approved} approved and reserved, ${backordered} backordered${toArrange ? ` (${toArrange} to arrange from another dealer)` : ""}, ${rejected} rejected.`} onClose={onClose}
+      <Modal open title="Approval details" description={`${verb}: ${approved} approved and reserved, ${backordered} backordered${toArrange ? ` (${toArrange} to arrange from another ${vocab.partner})` : ""}, ${rejected} rejected.`} onClose={onClose}
         footer={<>
           <Button onClick={() => setStep("quantities")}>Back</Button>
           <Button variant="primary" disabled={busy || !approvalReady(approval)} onClick={submit}>{busy ? "Saving…" : "Confirm approval"}</Button>
@@ -371,7 +372,7 @@ function DecisionModal({ r, busy, error, onClose, onSubmit }: ModalProps<unknown
           <thead className="bg-subtle text-left text-caption text-ink-muted">
             <tr><th className="px-3 py-2 font-medium">SKU</th><th className="px-3 py-2 text-right font-medium">Requested</th>
               <th className="px-3 py-2 text-right font-medium">Available</th>
-              <th className="px-3 py-2 text-right font-medium">Dealer already holds</th><th className="px-3 py-2 font-medium">Approve</th>
+              <th className="px-3 py-2 text-right font-medium">{vocab.Partner} already holds</th><th className="px-3 py-2 font-medium">Approve</th>
               <th className="px-3 py-2 font-medium">Remainder</th><th className="px-3 py-2 font-medium">Note</th></tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -381,13 +382,13 @@ function DecisionModal({ r, busy, error, onClose, onSubmit }: ModalProps<unknown
               return (
                 <tr key={x.line_id}>
                   <td className="px-3 py-2"><ProductCell sku={x.line.sku} name={x.line.product_name} />
-                    {!!x.line.qty_arranging && <div className="text-caption text-ink-muted">{x.line.qty_arranging} being arranged from another dealer</div>}</td>
+                    {!!x.line.qty_arranging && <div className="text-caption text-ink-muted">{x.line.qty_arranging} being arranged from another {vocab.partner}</div>}</td>
                   <td className="num px-3 py-2 text-right font-medium">{x.line.qty_requested}</td>
                   <td className="px-3 py-2 text-right"><Qty value={x.line.warehouse_available} zeroMuted={false} tone={x.line.warehouse_available ? undefined : "danger"} /></td>
-                  <td className="px-3 py-2 text-right" title={x.line.dealer_on_hand_all != null ? `All of this dealer's shops: ${x.line.dealer_on_hand_all}` : undefined}>
+                  <td className="px-3 py-2 text-right" title={x.line.dealer_on_hand_all != null ? `All of this ${vocab.partner}'s ${vocab.sites}: ${x.line.dealer_on_hand_all}` : undefined}>
                     <Qty value={x.line.dealer_on_hand ?? null} />
                     {(x.line.dealer_on_hand ?? 0) >= x.line.qty_requested && x.line.qty_requested > 0 &&
-                      <div className="mt-1 max-w-48 text-left text-caption text-warning" role="note">This dealer already holds {x.line.dealer_on_hand} of this tyre. Check with them before approving?</div>}
+                      <div className="mt-1 max-w-48 text-left text-caption text-warning" role="note">This {vocab.partner} already holds {x.line.dealer_on_hand} of this {vocab.item}. Check with them before approving?</div>}
                   </td>
                   <td className="w-28 px-3 py-2">
                     <Input aria-label={`Approve quantity for ${x.line.sku}`} aria-invalid={over || x.qty > toDecide(x.line)} type="number" min={0}
@@ -399,7 +400,7 @@ function DecisionModal({ r, busy, error, onClose, onSubmit }: ModalProps<unknown
                     {rest > 0 ? (
                       <Select aria-label={`Remainder for ${x.line.sku}`} value={x.remainder} onChange={(e) => set(i, { remainder: e.target.value })}
                         options={[...(x.line.product_active ? [{ value: "BACKORDER", label: `Backorder ${rest}` },
-                          { value: "TRANSFER", label: `Arrange ${rest} from another dealer` }] : []), { value: "REJECT", label: `Reject ${rest}` }]} />
+                          { value: "TRANSFER", label: `Arrange ${rest} from another ${vocab.partner}` }] : []), { value: "REJECT", label: `Reject ${rest}` }]} />
                     ) : <span className="text-ink-muted">—</span>}
                   </td>
                   <td className="px-3 py-2"><Input aria-label={`Decision note for ${x.line.sku}`} value={x.notes} onChange={(e) => set(i, { notes: e.target.value })} /></td>

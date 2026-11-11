@@ -14,6 +14,7 @@ import { fmtDate, fmtDateTime } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Invoice } from "@/lib/types";
 import { ShopLabel } from "@/components/pickers";
+import { vocab } from "@/lib/terms";
 
 const STATUS: Record<string, string> = { DRAFT: "Draft", ISSUED: "Invoiced in Xero", VOID: "Void" };
 
@@ -65,7 +66,7 @@ export default function InvoicePage() {
           </div>
         </header>
         <section className="py-4 text-body">
-          <div className="text-caption uppercase tracking-wide text-ink-muted">Dealer</div>
+          <div className="text-caption uppercase tracking-wide text-ink-muted">{vocab.Partner}</div>
           <div className="font-semibold">{inv.bill_to_name}</div>
           <div>Account ref. <b className="sku">{inv.bill_to_account_ref}</b></div>
           {inv.bill_to_address && <div className="whitespace-pre-line text-ink-secondary">{inv.bill_to_address}</div>}
@@ -75,8 +76,8 @@ export default function InvoicePage() {
         <div className="overflow-x-auto focus-visible:focus-ring" tabIndex={0} role="region" aria-label="Invoice lines, scrolls sideways">
           <table className="min-w-full text-body">
             <thead className="border-y border-line-strong text-left text-caption uppercase text-ink-secondary">
-              <tr><th className="py-2 pr-2">SKU</th><th className="pr-2">Tyre</th><th className="pr-2 text-right">Qty</th>
-                <th className="pr-2">Sale no.</th><th className="pr-2">Sale date</th><th>Shop</th></tr>
+              <tr><th className="py-2 pr-2">SKU</th><th className="pr-2">{vocab.Item}</th><th className="pr-2 text-right">Qty</th>
+                <th className="pr-2">Sale no.</th><th className="pr-2">Sale date</th><th>{vocab.Site}</th></tr>
             </thead>
             <tbody className="divide-y divide-line">
               {lines.map((l) => (
@@ -94,7 +95,7 @@ export default function InvoicePage() {
         </div>
         <div className="mt-4 flex justify-end">
           <dl className="w-64 text-body">
-            <div className="flex justify-between border-t border-line-strong py-1 font-semibold"><dt>Total tyres</dt><dd className="num">{lines.filter((l) => l.is_active).reduce((a, l) => a + l.quantity, 0)}</dd></div>
+            <div className="flex justify-between border-t border-line-strong py-1 font-semibold"><dt>Total {vocab.items}</dt><dd className="num">{lines.filter((l) => l.is_active).reduce((a, l) => a + l.quantity, 0)}</dd></div>
           </dl>
         </div>
         {inv.notes && <p className="mt-4 text-body text-ink-secondary">{inv.notes}</p>}

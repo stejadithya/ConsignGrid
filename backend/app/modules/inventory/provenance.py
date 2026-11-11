@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError
+from app.core.industry import vocab
 from app.core.lookups import by_id
 from app.core.permissions import ROLE_LABELS, Role
 from app.modules.customers.models import Location, LocationType, Reseller
@@ -76,7 +77,7 @@ def provenance(db: Session, viewer: User, location_id: int, product_id: int) -> 
                   | {s.created_by_user_id for s in stock_requests.values()})
     other_dealers = by_id(db, Reseller, set() if dealer_view else {t.source_reseller_id for t in transfers.values()})
 
-    your = "your" if dealer_view else "the dealer's"
+    your = "your" if dealer_view else f"the {vocab.partner}'s"
 
     def who(uid: int | None) -> str | None:
         u = users.get(uid)
@@ -90,8 +91,8 @@ def provenance(db: Session, viewer: User, location_id: int, product_id: int) -> 
         by = who(uid)
         ref = f" ({number})" if number else ""
         if by == "you":
-            return f"Latest stock: a new tyre you ordered{ref}" if first else f"You ordered this{ref}"
-        lead = "Latest stock: a new tyre ordered by" if first else "Ordered by"
+            return f"Latest stock: a new {vocab.item} you ordered{ref}" if first else f"You ordered this{ref}"
+        lead = f"Latest stock: a new {vocab.item} ordered by" if first else "Ordered by"
         return f"{lead} {by}{ref}" if by else f"{lead.removesuffix(' by')}{ref}"
 
     def for_request(req: ReplenishmentRequest) -> tuple[str, str]:
@@ -100,7 +101,7 @@ def provenance(db: Session, viewer: User, location_id: int, product_id: int) -> 
             sale = sales.get(req.origin_id) if req.origin_type == "consignment_sale" else None
             if sale is not None and sale.source == SaleSource.STOCKTAKE:
                 st = stocktakes.get(sale.stocktake_id)
-                return (f"Replacement for tyres sold, found at stock check {st.number if st else ''}".rstrip(),
+                return (f"Replacement for {vocab.items} sold, found at stock check {st.number if st else ''}".rstrip(),
                         "replacing sales")
             return f"Replacement for {your} sale {req.origin_number or ''}".rstrip(), "replacing sales"
         if req.reason == ReplenishmentReason.STOCK_REQUEST:
@@ -112,16 +113,16 @@ def provenance(db: Session, viewer: User, location_id: int, product_id: int) -> 
                     "Latest stock" if req.first_supply else "ordered")
         if req.reason == ReplenishmentReason.TARGET_SHORTFALL:
             if req.first_supply:
-                return "Latest stock: a new tyre sent by the warehouse", "Latest stock"
+                return f"Latest stock: a new {vocab.item} sent by the warehouse", "Latest stock"
             return f"Sent by the warehouse to top up {your} agreed level", "top-up"
         if req.reason == ReplenishmentReason.TRANSFER:
             gave = "you passed" if dealer_view else "passed"
-            return f"Replacement for tyres {gave} to another dealer ({req.origin_number})", "replacing transfers"
+            return f"Replacement for {vocab.items} {gave} to another {vocab.partner} ({req.origin_number})", "replacing transfers"
         return "Sent by the warehouse", "from the warehouse"
 
     def from_dealer(t: Transfer | None, number: str | None) -> str:
         name = None if dealer_view or t is None else other_dealers.get(t.source_reseller_id)
-        source = name.business_name if name else "another dealer"
+        source = name.business_name if name else f"another {vocab.partner}"
         return f"Moved in from {source}" + (f" ({number})" if number else "")
 
     arrivals: list[dict] = []
@@ -167,14 +168,14 @@ def provenance(db: Session, viewer: User, location_id: int, product_id: int) -> 
             case TxnType.SUPPLIER_RECEIPT:
                 add(on, qty, "Received from the supplier" + (f" ({ref})" if ref else ""), "from the supplier", None)
             case TxnType.TRANSFER_RECEIPT:
-                add(on, qty, from_dealer(transfers.get(t.reference_id), ref), "from another dealer", None)
+                add(on, qty, from_dealer(transfers.get(t.reference_id), ref), f"from another {vocab.partner}", None)
             case TxnType.TRANSIT_RESOLUTION if t.reference_type == "transfer":
                 if (t.reason or "").startswith("LATE_DELIVERY"):
-                    add(on, qty, from_dealer(transfers.get(t.reference_id), ref), "from another dealer", None)
+                    add(on, qty, from_dealer(transfers.get(t.reference_id), ref), f"from another {vocab.partner}", None)
                 else:
                     add(on, qty, f"Came back: transfer {ref} did not go ahead", "returned", None)
             case TxnType.STOCKTAKE_ADJUSTMENT:
-                add(on, qty, f"Extra tyre found at stock check {ref or ''}".rstrip(), "found at stock check", None)
+                add(on, qty, f"Extra {vocab.item} found at stock check {ref or ''}".rstrip(), "found at stock check", None)
             case TxnType.SALE_REVERSAL:
                 add(on, qty, f"Back in stock: sale {ref or ''} was cancelled".replace("  ", " "), "returned", None)
             case TxnType.ADJUSTMENT:

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api, ApiError } from "@/lib/api";
 import { fmtDate } from "@/lib/format";
+import { vocab } from "@/lib/terms";
 
 interface Arrival { on: string; qty: number; reason: string; group: string; reference: string | null }
 interface Origin { on_hand: number; arrivals: Arrival[]; more: boolean; in_stock: { label: string; qty: number }[] }
@@ -21,7 +22,7 @@ function load(locationId: number, productId: number): Promise<Origin> {
   return value;
 }
 
-const tyres = (n: number) => `${n} ${n === 1 ? "tyre" : "tyres"}`;
+const tyres = (n: number) => `${n} ${n === 1 ? vocab.item : vocab.items}`;
 
 /** ⓘ next to a SKU: hover (or tap) for a two-line summary of where this stock came from. */
 export function StockOrigin({ locationId, productId }: { locationId: number | null | undefined; productId: number | null | undefined }) {
@@ -88,7 +89,7 @@ export function StockOrigin({ locationId, productId }: { locationId: number | nu
           onClick={(e) => e.stopPropagation()}>
           {error ? <p className="text-danger">{error}</p>
             : !data ? <p className="text-ink-muted">Loading…</p>
-            : !latest ? <p className="text-ink-secondary">No tyres received here in the last 12 months.</p>
+            : !latest ? <p className="text-ink-secondary">No {vocab.items} received here in the last 12 months.</p>
             : (
               <>
                 {(all ? data.arrivals : [latest]).map((a, i) => (

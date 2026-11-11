@@ -15,6 +15,7 @@ from openpyxl.styles import Font, PatternFill
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.industry import vocab
 from app.modules.catalogue.models import Product
 from app.modules.customers.models import Location, LocationType, Reseller
 from app.modules.inventory.models import StockBalance
@@ -112,11 +113,11 @@ def _shape(db: Session, rows: dict, date_from: date, date_to: date) -> dict:
 def to_xlsx(report: dict) -> bytes:
     wb = Workbook()
     ws = wb.active
-    ws.title = "By dealer by SKU"
-    ws.append([f"Report by dealer, by SKU — {report['date_from']:%d %b %Y} to {report['date_to']:%d %b %Y}"])
+    ws.title = f"By {vocab.partner} by SKU"
+    ws.append([f"Report by {vocab.partner}, by SKU — {report['date_from']:%d %b %Y} to {report['date_to']:%d %b %Y}"])
     ws["A1"].font = Font(bold=True, size=13)
     ws.append([])
-    header = ["Dealer", "Account ref", "Shop", "City", "SKU", "Tyre", *[LABELS[k] for k in METRICS]]
+    header = [vocab.Partner, "Account ref", vocab.Site, "City", "SKU", vocab.Item, *[LABELS[k] for k in METRICS]]
     ws.append(header)
     for cell in ws[3]:
         cell.font = Font(bold=True)
@@ -128,7 +129,7 @@ def to_xlsx(report: dict) -> bytes:
         ws.append([f"Total {g['reseller_name']}", g["account_ref"], "", "", "", "", *[g["totals"][k] for k in METRICS]])
         for cell in ws[ws.max_row]:
             cell.font = Font(bold=True)
-    ws.append(["Total, all dealers", "", "", "", "", "", *[report["totals"][k] for k in METRICS]])
+    ws.append([f"Total, all {vocab.partners}", "", "", "", "", "", *[report["totals"][k] for k in METRICS]])
     for cell in ws[ws.max_row]:
         cell.font = Font(bold=True)
     for col, width in zip("ABCDEFGHIJKLMN", (28, 14, 22, 14, 16, 42, 10, 10, 14, 11, 14, 12, 14, 14), strict=True):

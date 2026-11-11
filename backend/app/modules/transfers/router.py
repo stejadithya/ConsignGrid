@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel, Field
 
 from app.core.errors import BusinessRuleError, NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.lookups import Names
 from app.core.permissions import P, Role
 from app.modules.delivery_notes import service as delivery_notes
@@ -175,20 +176,21 @@ def _linked(db, req_id) -> LinkedReq | None:
                      qty_outstanding=r.qty_outstanding, qty_awaiting_supply=r.qty_awaiting_supply)
 
 
-OTHER_RESELLER = "Another dealer"
+def _other_reseller() -> str:
+    return f"Another {vocab.partner}"
 
 
 def _redact_counterparty(out: TransferOut, reseller_id: int) -> TransferOut:
     """Reseller users see their own side of a transfer only; the other party is not disclosed."""
     if out.source_reseller_id is not None and out.source_reseller_id != reseller_id:
         out.source_reseller_id = out.source_location_id = None
-        out.source_reseller_name, out.source_location_code = OTHER_RESELLER, None
+        out.source_reseller_name, out.source_location_code = _other_reseller(), None
         out.source_request = None
         out.collected_from_name = None   # a person at the other dealer
     out.warehouse_check_notes = None     # internal
     if out.destination_reseller_id != reseller_id:
         out.destination_reseller_id = out.destination_location_id = None
-        out.destination_reseller_name, out.destination_location_code = OTHER_RESELLER, None
+        out.destination_reseller_name, out.destination_location_code = _other_reseller(), None
         out.destination_request = None
     return out
 
@@ -251,7 +253,7 @@ def list_transfers(db: DB, user: Reader, status: TransferStatus | None = None, r
 @router.get("/sources", response_model=SourcesOut)
 def sources(product_id: int, db: DB, user: Reader, exclude_location_id: int | None = None, quantity: int = 1):
     if user.is_reseller_user:
-        raise PermissionDeniedError("Not available to dealer users")
+        raise PermissionDeniedError(f"Not available to {vocab.partner} users")
     wh, opts = service.find_sources(db, product_id, exclude_location_id=exclude_location_id, quantity=quantity)
     return SourcesOut(product_id=product_id, warehouse_available=wh, sources=[SourceOut(**o.__dict__) for o in opts])
 

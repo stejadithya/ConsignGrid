@@ -9,6 +9,7 @@ import { useApi } from "@/lib/hooks";
 import type { Invoice, UninvoicedLine } from "@/lib/types";
 import { Alert, Badge, Card, DataTable, Loading } from "../ui";
 import { DashboardHeader, JobList, plural, RoleBanner, Section } from "./shared";
+import { vocab } from "@/lib/terms";
 
 /** The Finance Manager's view: what to bill in Xero, invoice records waiting for a Xero number, and what was invoiced. */
 export function FinanceDashboard() {
@@ -43,8 +44,8 @@ export function FinanceDashboard() {
       {lines && (
         <>
           <RoleBanner theme="finance" figures={[
-            { label: "Tyres sold, not invoiced", value: tyres.toLocaleString(), href: "/invoices", hint: plural(byDealer.length, "dealer"), tone: tyres ? "warn" : undefined },
-            { label: "Dealers to invoice", value: byDealer.length, href: "/invoices" },
+            { label: `${vocab.Items} sold, not invoiced`, value: tyres.toLocaleString(), href: "/invoices", hint: plural(byDealer.length, vocab.partner, vocab.partners), tone: tyres ? "warn" : undefined },
+            { label: `${vocab.Partners} to invoice`, value: byDealer.length, href: "/invoices" },
             { label: "Waiting for a Xero number", value: awaitingXero.length, href: "/invoices", tone: awaitingXero.length ? "warn" : undefined },
             { label: "Invoiced this month", value: invoicedThisMonth, href: "/invoices" },
           ]} />
@@ -52,17 +53,17 @@ export function FinanceDashboard() {
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
             <Section title="To do" className="xl:col-span-2" description="Each line opens the screen to do it">
               <JobList jobs={[
-                { label: "Create invoice records", value: byDealer.length, hint: `${plural(tyres, "tyre")} sold and not yet invoiced`, href: "/invoices", icon: ReceiptText },
+                { label: "Create invoice records", value: byDealer.length, hint: `${plural(tyres, vocab.item, vocab.items)} sold and not yet invoiced`, href: "/invoices", icon: ReceiptText },
                 { label: "Add Xero numbers", value: awaitingXero.length, hint: "Invoice records not yet matched to Xero", href: "/invoices", icon: FileCheck2, urgent: awaitingXero.length > 0 },
               ]} />
             </Section>
-            <Section title="Sold, not invoiced, by dealer" className="xl:col-span-3">
+            <Section title={`Sold, not invoiced, by ${vocab.partner}`} className="xl:col-span-3">
               <Card padded={false}>
-                <DataTable mobile="cards" label="Dealers to invoice" search={false} rows={byDealer} rowKey={(x) => x.id} pageSize={8}
-                  empty="Nothing waiting to be invoiced" emptyHint="Tyres dealers sell appear here until they are invoiced."
+                <DataTable mobile="cards" label={`${vocab.Partners} to invoice`} search={false} rows={byDealer} rowKey={(x) => x.id} pageSize={8}
+                  empty="Nothing waiting to be invoiced" emptyHint={`${vocab.Items} ${vocab.partners} sell appear here until they are invoiced.`}
                   columns={[
-                    { key: "n", mobile: "primary", header: "Dealer", cell: (x) => <Link className="link font-medium" href={`/resellers/${x.id}`}>{x.name}</Link> },
-                    { key: "t", mobile: "field", mobileOrder: 1, header: "Tyres", align: "right", cell: (x) => <Link className="link num" href="/invoices">{x.tyres}</Link> },
+                    { key: "n", mobile: "primary", header: vocab.Partner, cell: (x) => <Link className="link font-medium" href={`/resellers/${x.id}`}>{x.name}</Link> },
+                    { key: "t", mobile: "field", mobileOrder: 1, header: vocab.Items, align: "right", cell: (x) => <Link className="link num" href="/invoices">{x.tyres}</Link> },
                     { key: "s", mobile: "field", mobileOrder: 2, header: "Sales", align: "right", cell: (x) => <Link className="link num" href={`/sales?reseller=${x.id}`}>{x.sales.size}</Link> },
                     { key: "o", mobile: "field", mobileOrder: 3, header: "Oldest", align: "right", cell: (x) => <span className={x.oldest > 30 ? "num font-semibold text-warning" : "num"}>{plural(x.oldest, "day")}</span> },
                   ]} />
@@ -77,9 +78,9 @@ export function FinanceDashboard() {
                   empty="All matched to Xero" emptyHint="Invoice records without a Xero number appear here."
                   columns={[
                     { key: "n", mobile: "primary", header: "Record", cell: (i) => <Link className="link font-medium" href={`/invoices/${i.id}`}>{i.number}</Link> },
-                    { key: "d", mobile: "secondary", header: "Dealer", cell: (i) => i.bill_to_name },
+                    { key: "d", mobile: "secondary", header: vocab.Partner, cell: (i) => i.bill_to_name },
                     { key: "c", mobile: "field", mobileOrder: 1, header: "Created", cell: (i) => <span className="text-ink-secondary">{fmtDate(i.invoice_date)}</span> },
-                    { key: "q", mobile: "field", mobileOrder: 2, header: "Tyres", align: "right", cell: (i) => <Link className="link num" href={`/invoices/${i.id}`}>{tyresOf(i)}</Link> },
+                    { key: "q", mobile: "field", mobileOrder: 2, header: vocab.Items, align: "right", cell: (i) => <Link className="link num" href={`/invoices/${i.id}`}>{tyresOf(i)}</Link> },
                     { key: "s", mobile: "status", header: "Status", cell: (i) => <Badge value={i.status} /> },
                   ]} />
               </Card>
@@ -88,7 +89,7 @@ export function FinanceDashboard() {
                   empty="Nothing invoiced yet" emptyHint="Invoice records appear here once they are invoiced."
                   columns={[
                     { key: "n", mobile: "primary", header: "Record", cell: (i) => <Link className="link font-medium" href={`/invoices/${i.id}`}>{i.number}</Link> },
-                    { key: "d", mobile: "secondary", header: "Dealer", cell: (i) => i.bill_to_name },
+                    { key: "d", mobile: "secondary", header: vocab.Partner, cell: (i) => i.bill_to_name },
                     { key: "x", mobile: "field", mobileOrder: 1, header: "Xero no.", cell: (i) => <span className="sku text-label">{i.external_reference ?? "—"}</span> },
                     { key: "w", mobile: "field", mobileOrder: 2, header: "Invoiced", cell: (i) => <span className="text-ink-secondary">{i.issued_at ? fmtDateTime(i.issued_at) : "—"}</span> },
                   ]} />

@@ -15,6 +15,7 @@ import { DealerMessages } from "./DealerMessages";
 import { StockCheckAlerts } from "./StockCheckAlerts";
 import { StockRequestsPanel } from "./StockRequestsPanel";
 import { TyreLabel } from "../pickers";
+import { vocab } from "@/lib/terms";
 
 interface HistoryRow { occurred_at: string; transaction_number: string; category: string; sku: string; qty_in: number; qty_out: number; reference_number: string | null }
 
@@ -46,7 +47,7 @@ export function ResellerDashboard() {
 
   return (
     <>
-      <DashboardHeader name={user.full_name} subtitle="Your shop: what you have, what is on the way and what to do next."
+      <DashboardHeader name={user.full_name} subtitle={`Your ${vocab.site}: what you have, what is on the way and what to do next.`}
         actions={<>
           {can("stock_request.create") && <ButtonLink href="/stock-requests/new"><FilePlus2 aria-hidden />Request stock</ButtonLink>}
           {can("sales.record") && <ButtonLink href="/sales?new=1" variant="primary"><ShoppingCart aria-hidden />Report a sale</ButtonLink>}
@@ -57,7 +58,7 @@ export function ResellerDashboard() {
       {d && (
         <>
           <RoleBanner theme="dealer" figures={[
-            { label: "In my shop", value: d.consignment.on_hand.toLocaleString(), href: "/consignment",
+            { label: `In my ${vocab.site}`, value: d.consignment.on_hand.toLocaleString(), href: "/consignment",
               hint: d.consignment.on_hand ? `${d.consignment.available.toLocaleString()} ready to sell` : "No stock placed with you yet" },
             { label: "On the way", value: unitsOnTheWay.toLocaleString(), href: "/replenishment?tab=deliveries",
               hint: plural(inTransit.length, "delivery", "deliveries") },
@@ -70,10 +71,10 @@ export function ResellerDashboard() {
             ? <CallMeButton requestId={n.entity_id} number={n.title.replace("Update on your order ", "")} /> : null} />
           <Section title="What to do next" className="mt-0" description="Each line opens the screen to do it">
             <JobList jobs={[
-              { label: "Confirm deliveries that arrived", value: inTransit.length, hint: inTransit.length ? `${unitsOnTheWay} tyre(s) on the way to you` : "Nothing on the way", href: "/replenishment?tab=deliveries", icon: PackageCheck, urgent: inTransit.length > 0 },
-              { label: "Ask for tyres running low", value: low, hint: "Below your agreed level or nothing left to sell", href: "/stock-requests/new", icon: FilePlus2 },
-              { label: "Check on waiting orders", value: (requests ?? []).length, hint: `${d.backorders.qty_awaiting_supply} tyre(s) waiting for supply`, href: "/backorders", icon: Hourglass },
-              { label: "Report today's sales", value: soldUnits, hint: "Tyres reported this month; report each sale so stock is replaced", href: "/sales?new=1", icon: Store },
+              { label: "Confirm deliveries that arrived", value: inTransit.length, hint: inTransit.length ? `${unitsOnTheWay} ${vocab.item}(s) on the way to you` : "Nothing on the way", href: "/replenishment?tab=deliveries", icon: PackageCheck, urgent: inTransit.length > 0 },
+              { label: `Ask for ${vocab.items} running low`, value: low, hint: "Below your agreed level or nothing left to sell", href: "/stock-requests/new", icon: FilePlus2 },
+              { label: "Check on waiting orders", value: (requests ?? []).length, hint: `${d.backorders.qty_awaiting_supply} ${vocab.item}(s) waiting for supply`, href: "/backorders", icon: Hourglass },
+              { label: "Report today's sales", value: soldUnits, hint: `${vocab.Items} reported this month; report each sale so stock is replaced`, href: "/sales?new=1", icon: Store },
             ]} />
           </Section>
 
@@ -82,9 +83,9 @@ export function ResellerDashboard() {
           <Section title="My stock requiring attention" description="Below your agreed level or with nothing left to sell">
             <Card padded={false}>
               <DataTable mobile="cards" label="My stock" search={false} rows={positions ? attentionRows : null} rowKey={(p) => `${p.location_id}-${p.product_id}`} pageSize={8}
-                empty="Your stock is at its agreed levels" emptyHint="Tyres that run low appear here, with anything already on the way."
+                empty="Your stock is at its agreed levels" emptyHint={`${vocab.Items} that run low appear here, with anything already on the way.`}
                 columns={[
-                  { key: "p", mobile: "primary", header: "Tyre", cell: (p) => <div className="flex items-center gap-1"><ProductCell name={p.product_name} sku={p.sku} /><StockOrigin locationId={p.location_id} productId={p.product_id} /></div> },
+                  { key: "p", mobile: "primary", header: vocab.Item, cell: (p) => <div className="flex items-center gap-1"><ProductCell name={p.product_name} sku={p.sku} /><StockOrigin locationId={p.location_id} productId={p.product_id} /></div> },
                   { key: "oh", mobile: "field", mobileOrder: 1, header: "In stock", align: "right", cell: (p) => <Qty value={p.on_hand} zeroMuted={false} tone={p.available === 0 ? "danger" : undefined} /> },
                   { key: "t", mobile: "field", mobileOrder: 2, header: "Agreed level", align: "right", cell: (p) => p.target_qty },
                   { key: "in", mobile: "field", mobileOrder: 3, header: "On the way", align: "right", cell: (p) => <Qty value={p.replenishment_in_transit + p.transfers_inbound} /> },

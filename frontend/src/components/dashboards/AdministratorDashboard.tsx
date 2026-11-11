@@ -13,6 +13,7 @@ import { Alert, Badge, Card, EmptyState, IconChip, Loading } from "../ui";
 import { DashboardHeader, plural, RoleBanner, Section } from "./shared";
 import { StockRequestsPanel } from "./StockRequestsPanel";
 import { branding } from "@/config/branding";
+import { vocab } from "@/lib/terms";
 
 interface FeedbackRow { id: number; user_name: string | null; role: string; page: string; feedback_type: string; description: string; created_at: string }
 
@@ -22,7 +23,7 @@ const ACTIONS: { href: string; label: string; detail: string; icon: LucideIcon }
   { href: "/admin", label: "Pilot feedback", detail: "Issues and ideas from users", icon: MessageSquare },
   { href: "/admin", label: "Audit log & reconciliation", detail: "Who did what; ledger check", icon: Scale },
   { href: "/purchasing", label: "Purchasing & receipts", detail: "Incoming supplier stock", icon: ClipboardList },
-  { href: "/resellers", label: "Dealers", detail: "Accounts, targets and prices", icon: Store },
+  { href: "/resellers", get label() { return vocab.Partners; }, detail: "Accounts, targets and prices", icon: Store },
 ];
 
 /** Super-user overview: the whole network at a glance plus the administration shortcuts. */

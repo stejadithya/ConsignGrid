@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError
+from app.core.industry import vocab
 from app.modules.audit.models import AuditEvent
 from app.modules.catalogue.models import Product
 from app.modules.customers.models import Location, Reseller
@@ -62,7 +63,7 @@ class DealerHistory:
 def dealer_history(db: Session, reseller_id: int) -> DealerHistory:
     reseller = db.get(Reseller, reseller_id)
     if reseller is None:
-        raise NotFoundError("Dealer not found")
+        raise NotFoundError(f"{vocab.Partner} not found")
     loc_ids = list(db.execute(select(Location.id).where(Location.reseller_id == reseller_id)).scalars())
 
     creator = db.execute(select(User.full_name).join(AuditEvent, AuditEvent.actor_user_id == User.id)

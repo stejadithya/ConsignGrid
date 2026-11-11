@@ -9,6 +9,7 @@ import type { StockRequest, StockRequestSummary } from "@/lib/types";
 import { StockRequestBadge } from "../StockRequests";
 import { ButtonLink, Card, DataTable } from "../ui";
 import { Section, WorkQueue, type QueueItem } from "./shared";
+import { vocab } from "@/lib/terms";
 
 type Focus = "approve" | "ship" | "request";
 
@@ -40,7 +41,7 @@ export function StockRequestsPanel({ focus }: { focus: Focus }) {
           emptyHint={focus === "request" ? "Create a request for one or more SKUs; you are notified as it moves along." : undefined}
           columns={[
             { key: "n", mobile: "primary" as const, header: "Request", cell: (r) => <Link className="link font-medium" href={`/stock-requests/${r.id}`}>{r.number}</Link> },
-            ...(user?.reseller_id ? [] : [{ key: "r", mobile: "secondary" as const, header: "Dealer", cell: (r: StockRequest) => r.reseller_name }]),
+            ...(user?.reseller_id ? [] : [{ key: "r", mobile: "secondary" as const, header: vocab.Partner, cell: (r: StockRequest) => r.reseller_name }]),
             { key: "by", header: "Requested by", cell: (r) => <span className="text-ink-secondary">{r.created_by}</span> },
             { key: "d", mobile: "field" as const, mobileOrder: 2, header: "Required", cell: (r) => <span className="text-ink-secondary">{fmtDate(r.required_date)}</span> },
             { key: "q", mobile: "field" as const, mobileOrder: 1, header: "Units", align: "right", cell: (r) => <Link className="link num" href={`/stock-requests/${r.id}`}>{r.qty_requested}</Link> },

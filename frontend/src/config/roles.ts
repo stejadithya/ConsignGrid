@@ -8,13 +8,14 @@ import {
   Warehouse, type LucideIcon,
 } from "lucide-react";
 import type { RoleCode } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 export const ROLE_LABELS: Record<RoleCode, string> = {
   ADMINISTRATOR: "Administrator",
   RELATIONSHIP_MANAGER: "Relationship Manager",
   WAREHOUSE_MANAGER: "Warehouse Manager",
   SALES_REP: "Sales Representative",
-  RESELLER: "Dealer",
+  get RESELLER() { return vocab.Partner; },
   FINANCE_MANAGER: "Finance Manager",
 };
 
@@ -35,7 +36,7 @@ const dashboard: NavItem = { href: "/", label: "Dashboard", icon: LayoutDashboar
 const products: NavItem = { href: "/products", label: "Products", icon: Package, permission: "catalogue.read" };
 const warehouse: NavItem = { href: "/warehouse", label: "Warehouse", icon: Warehouse, permission: "inventory.read" };
 const consignment: NavItem = { href: "/consignment", label: "Consignment Stock", icon: Store, permission: "inventory.read" };
-const resellers: NavItem = { href: "/resellers", label: "Dealers", icon: Building2, permission: "reseller.read" };
+const resellers: NavItem = { href: "/resellers", get label() { return vocab.Partners; }, icon: Building2, permission: "reseller.read" };
 const sales: NavItem = { href: "/sales", label: "Sales & Stocktakes", icon: ClipboardCheck, permission: "inventory.read" };
 const replenishment: NavItem = { href: "/replenishment", label: "Replenishment", icon: RefreshCw, permission: "replenishment.read" };
 const backorders: NavItem = { href: "/backorders", label: "Backorders", icon: Hourglass, permission: "replenishment.read" };

@@ -24,6 +24,7 @@ import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, humanize } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Delivery, PurchaseOrder, RequestDetail } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 function originLink(r: RequestDetail) {
   if (!r.origin_number) return r.reason === "MANUAL" ? "Manual request" : "—";
@@ -162,7 +163,7 @@ export default function RequestDetailPage() {
         <Alert tone="info">Approved, shipped and delivered on its stock request: <Link className="link font-medium" href={`/stock-requests/${r.origin_id}`}>{r.origin_number}</Link></Alert>
       )}
       {staff && flow && escalated && <Alert tone="warn">{escalationText(r)}</Alert>}
-      {staff && flow && r.awaiting_approval && !escalated && <Alert tone="info">Raised by {r.raised_by ?? "the dealer"}: waiting for approval.</Alert>}
+      {staff && flow && r.awaiting_approval && !escalated && <Alert tone="info">Raised by {r.raised_by ?? `the ${vocab.partner}`}: waiting for approval.</Alert>}
       {!staff && rejectedNote && <Alert tone="info">{rejectedNote}</Alert>}
       {!managedOnSrq && <Card className="mb-4"><Timeline steps={steps(r)} /></Card>}
       {staff && (r.approved_by || r.auto_approved) && (
@@ -177,18 +178,18 @@ export default function RequestDetailPage() {
       )}
       {chain && (
         <Card title="Transfer link" icon={ArrowLeftRight} className="mb-4"
-          subtitle="Who supplied this dealer, and the replacement owed to the dealer who gave the tyres">
+          subtitle={`Who supplied this ${vocab.partner}, and the replacement owed to the ${vocab.partner} who gave the ${vocab.items}`}>
           <ul className="divide-y divide-line text-body">
             {(r.covered_by_transfers ?? []).map((t) => (
               <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 first:pt-0 last:pb-0">
                 <span>Covered by <Link className="link font-medium" href={`/transfers/${t.id}`}>{t.number}</Link>
-                  {" "}({t.quantity} from {t.source_reseller_name ?? "a dealer not chosen yet"})</span>
+                  {" "}({t.quantity} from {t.source_reseller_name ?? `${vocab.aPartner} not chosen yet`})</span>
                 <Badge value={t.status} />
                 <span className="text-ink-secondary">
                   {t.replacement
                     ? <>{t.source_reseller_name}&rsquo;s replacement <Link className="link" href={`/replenishment/${t.replacement.id}`}>{t.replacement.number}</Link>
                       {" "}<Badge value={t.replacement.status} />{t.replacement.qty_awaiting_supply > 0 && <> · {t.replacement.qty_awaiting_supply} on backorder</>}</>
-                    : "Their replacement is raised when the tyres are collected"}
+                    : `Their replacement is raised when the ${vocab.items} are collected`}
                 </span>
               </li>
             ))}
@@ -230,7 +231,7 @@ export default function RequestDetailPage() {
             <Card key={d.id} title={<span className="flex items-center gap-2">Shipment {d.number} <Badge value={d.status} /></span>}
               actions={d.status === "IN_TRANSIT" && can("delivery.confirm") && (canConfirmCarried(user, d.shipping_method === "SALES_REP" ? d.carried_by_user_id : null)
                 ? <Button size="sm" variant="primary" className={cx(confirmInBar && "max-lg:hidden")} onClick={() => setDialog({ confirm: d })}>Confirm delivery</Button>
-                : <span className="text-caption text-ink-muted">To be confirmed by the dealer or {d.carried_by}</span>)}>
+                : <span className="text-caption text-ink-muted">To be confirmed by the {vocab.partner} or {d.carried_by}</span>)}>
               <DefinitionList columns={1} items={[
                 ["Shipped with", d.shipping_method === "SALES_REP" ? `Sales representative · ${d.carried_by ?? ""}` : `Courier · ${d.carrier_reference ?? "—"}`],
                 ["Tracking number", d.tracking_number], ["Ship to", d.shipping_address],
@@ -305,7 +306,7 @@ export default function RequestDetailPage() {
         onConfirm={() => post(`/replenishment/requests/${r.id}/hand-back`, { note: null })} />
       <ConfirmDialog open={dialog === "reject"} title={`Reject ${r.number}`} danger requireReason busy={action.busy} error={action.error}
         confirmLabel="Reject request" onClose={closeDialog} onConfirm={(reason) => post(`/replenishment/requests/${r.id}/reject`, { reason })}
-        message={`The ${r.qty_awaiting_supply} unit(s) still awaiting supply are not supplied. The dealer gets a kind standard message; your reason stays with the staff.`} />
+        message={`The ${r.qty_awaiting_supply} unit(s) still awaiting supply are not supplied. The ${vocab.partner} gets a kind standard message; your reason stays with the staff.`} />
       {dialog === "ship" && <ShipModal number={r.number} resellerId={r.reseller_id}
         lines={[{ key: r.id, sku: r.sku, productName: r.product_name, reserved: r.qty_allocated }]}
         busy={action.busy} error={action.error} onClose={closeDialog}

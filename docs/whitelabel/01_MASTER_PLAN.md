@@ -183,11 +183,16 @@ Units of measure, mobile barcode/GS1 scanning (UDI DI/PI parsing), offline stock
 
 ---
 
-## 6. Decisions and assumptions (please confirm or correct)
+## 6. Decisions and assumptions
+
+**Confirmed by Seven Hills Global (11 Nov 2026):** the recommendations stand — W-002 (ConsignGrid is a working
+name), W-003 (silo first, pooled later), W-004 (tyres stays the default pack), W-005 (keep the stack, move to
+containers), W-006 (English first), and the first verticals after tyres: **medical devices, auto parts and
+batteries, building materials/tiles**. Still to confirm in writing: W-001 (IP ownership and no tyre exclusivity).
 
 | # | Assumption I am working with | Why it matters |
 |---|---|---|
-| W-001 | **Seven Hills Global owns the IP** in TyreGrow and may resell it; the reference customer has a licence, not ownership, and has no exclusivity in tyres. | Without this, we cannot sell to other tyre distributors. Get it in writing. |
+| W-001 | ⚠ *open* — **Seven Hills Global owns the IP** in TyreGrow and may resell it; the reference customer has a licence, not ownership, and has no exclusivity in tyres. | Without this, we cannot sell to other tyre distributors. Get it in writing. |
 | W-002 | **ConsignGrid** is a working product name only. | Every name is config; no rework if it changes. |
 | W-003 | **Silo first, pooled later** (§3.2). | Determines the next 4 months of engineering. |
 | W-004 | **Tyres stays the default industry pack** until the generic product is proven, so the reference customer's behaviour never changes. | Protects the reference customer. |

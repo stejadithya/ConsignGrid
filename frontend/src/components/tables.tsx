@@ -10,6 +10,7 @@ import { MiniProgress } from "./flow";
 import { ShopLabel } from "./pickers";
 import { StockOrigin } from "./StockOrigin";
 import { Badge, cx, DataTable, ProductCell, Qty } from "./ui";
+import { vocab } from "@/lib/terms";
 
 const TRANSFER_STAGES = ["REQUESTED", "APPROVED", "IN_TRANSIT", "COMPLETED"];
 
@@ -25,7 +26,7 @@ export function RequestsTable({ rows, showReseller = false, filters, empty, filt
   rows: ReplenishmentRequest[] | null; showReseller?: boolean; filters?: ReactNode; empty?: ReactNode; filterCount?: number; onClearFilters?: () => void;
 }) {
   return (
-    <DataTable mobile="cards" label="Replenishment requests" rows={rows} rowKey={(r) => r.id} searchPlaceholder="Search request, dealer, SKU…" filters={filters}
+    <DataTable mobile="cards" label="Replenishment requests" rows={rows} rowKey={(r) => r.id} searchPlaceholder={`Search request, ${vocab.partner}, SKU…`} filters={filters}
       filterCount={filterCount} onClearFilters={onClearFilters}
       empty={empty ?? "No replenishment requests"} emptyHint="There are currently no open replenishment requests. They appear when sales, transfers or target shortfalls create demand."
       rowClassName={(r) => r.priority === "URGENT" && r.qty_outstanding > 0 && "shadow-[inset_3px_0_0_var(--color-danger)]"}
@@ -33,9 +34,9 @@ export function RequestsTable({ rows, showReseller = false, filters, empty, filt
         { key: "n", mobile: "primary" as const, header: "Request", mobileSort: "Request number", value: (r) => r.number, cell: (r) => (
           <div><Link className="link" href={`/replenishment/${r.id}`}>{r.number}</Link><div className="text-caption whitespace-nowrap text-ink-muted">{fmtDate(r.created_at)}</div></div>
         ) },
-        ...(showReseller ? [{ key: "res", mobile: "secondary" as const, mobileOrder: 1, header: "Dealer", value: (r: ReplenishmentRequest) => r.reseller_name,
+        ...(showReseller ? [{ key: "res", mobile: "secondary" as const, mobileOrder: 1, header: vocab.Partner, value: (r: ReplenishmentRequest) => r.reseller_name,
           cell: (r: ReplenishmentRequest) => <div className="min-w-0"><div className="truncate text-ink">{r.reseller_name}</div><div className="text-caption text-ink-muted">{r.location_code}</div></div> }]
-          : [{ key: "l", header: "Shop", value: (r: ReplenishmentRequest) => r.location_code, cell: (r: ReplenishmentRequest) => <ShopLabel code={r.location_code} withDealer={false} /> }]),
+          : [{ key: "l", header: vocab.Site, value: (r: ReplenishmentRequest) => r.location_code, cell: (r: ReplenishmentRequest) => <ShopLabel code={r.location_code} withDealer={false} /> }]),
         { key: "s", mobile: "secondary" as const, mobileOrder: 2, header: "Product", value: (r) => `${r.sku} ${r.product_name}`, cell: (r) => <div className="flex items-center gap-1"><ProductCell name={r.product_name} sku={r.sku} /><StockOrigin locationId={r.location_id} productId={r.product_id} /></div> },
         { key: "req", mobile: "field" as const, mobileOrder: 3, header: "Required", align: "right", value: (r) => r.qty_required, cell: (r) => r.qty_required },
         { key: "al", header: "Allocated", align: "right", cell: (r) => <Qty value={r.qty_allocated + r.qty_transfer_covered} /> },
@@ -55,7 +56,7 @@ export function TransfersTable({ rows, perspective, filters, filterCount, onClea
   rows: Transfer[] | null; perspective?: number; filters?: ReactNode; filterCount?: number; onClearFilters?: () => void;
 }) {
   return (
-    <DataTable mobile="cards" label="Transfers" rows={rows} rowKey={(t) => t.id} filters={filters} searchPlaceholder="Search transfer, dealer, SKU…"
+    <DataTable mobile="cards" label="Transfers" rows={rows} rowKey={(t) => t.id} filters={filters} searchPlaceholder={`Search transfer, ${vocab.partner}, SKU…`}
       filterCount={filterCount} onClearFilters={onClearFilters}
       empty="No stock transfers" emptyHint="No stock transfers have been created for this view."
       rowClassName={(t) => t.status === "RECEIVED_WITH_DISCREPANCY" && "bg-danger-soft/40"}
@@ -67,7 +68,7 @@ export function TransfersTable({ rows, perspective, filters, filterCount, onClea
           </div>
         ) },
         ...(perspective ? [{ key: "dir", mobile: "field" as const, mobileOrder: 3, header: "Direction", cell: (t: Transfer) => (t.source_reseller_id === perspective ? <Badge value="TRANSFER" label="Outgoing" /> : <Badge value="RECEIVED" tone="info" label="Incoming" />) }] : []),
-        { key: "s", mobile: "secondary" as const, header: "Tyre", value: (t) => `${t.sku} ${t.product_name}`, cell: (t) => <ProductCell name={t.product_name} sku={t.sku} /> },
+        { key: "s", mobile: "secondary" as const, header: vocab.Item, value: (t) => `${t.sku} ${t.product_name}`, cell: (t) => <ProductCell name={t.product_name} sku={t.sku} /> },
         { key: "route", mobile: "field" as const, mobileLabel: "Route", mobileOrder: 1, header: "From → To", value: (t) => `${t.source_reseller_name ?? ""} ${t.destination_reseller_name ?? ""}`, cell: (t) => (
           <div className="flex items-center gap-2.5">
             <div className="min-w-0">

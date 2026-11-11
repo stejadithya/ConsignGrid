@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { api } from "@/lib/api";
 import { fmtDate } from "@/lib/format";
 import { Badge, cx } from "./ui";
+import { vocab } from "@/lib/terms";
 
 /** One result from GET /search. */
 export interface SearchHit {
@@ -16,9 +17,11 @@ export interface SearchResults { query: string; documents: SearchHit[]; dealers:
 
 const MIN = 3;
 const DELAY_MS = 300;
-const GROUPS: [keyof Omit<SearchResults, "query">, string][] = [["documents", "Documents"], ["dealers", "Dealers"], ["tyres", "Tyres"], ["people", "People"]];
+type GroupKey = keyof Omit<SearchResults, "query">;
+const GROUP_KEYS: GroupKey[] = ["documents", "dealers", "tyres", "people"];
+const groupTitle = (k: GroupKey) => ({ documents: "Documents", dealers: vocab.Partners, tyres: vocab.Items, people: "People" })[k];
 
-export const flatten = (r: SearchResults | null) => (r ? GROUPS.flatMap(([k]) => r[k]) : []);
+export const flatten = (r: SearchResults | null) => (r ? GROUP_KEYS.flatMap((k) => r[k]) : []);
 
 /** One search box for the whole app: document numbers (SRQ-, REP-, TRF-, DEL-, SAL-, INV-, PO-, GRN-, STK-, TXN-, and the
  *  Xero number for those allowed), dealers, tyres and people. Results come as you type; Enter on an exact number opens
@@ -92,12 +95,12 @@ export function GlobalSearch() {
 
   const showing = open && q.replace(/[^\p{L}\p{N}]/gu, "").length >= MIN && results !== null;
   // Position of each group's first result in the keyboard order.
-  const starts = GROUPS.map((_, gi) => GROUPS.slice(0, gi).reduce((a, [k]) => a + (results?.[k].length ?? 0), 0));
+  const starts = GROUP_KEYS.map((_, gi) => GROUP_KEYS.slice(0, gi).reduce((a, k) => a + (results?.[k].length ?? 0), 0));
   const panel = showing && (
     <div id={listId} role="listbox" aria-label="Search results"
       className="absolute top-full right-0 left-0 z-50 mt-1 max-h-[70vh] overflow-y-auto rounded-card border border-line bg-surface py-1 shadow-lg sm:w-[30rem] sm:left-auto">
-      {hits.length === 0 && <div className="px-3 py-3 text-label text-ink-muted">Nothing found for “{q}”. Try a number such as SRQ-000123, a dealer, or a tyre size like 195 65.</div>}
-      {GROUPS.map(([key, title], gi) => results![key].length > 0 && (
+      {hits.length === 0 && <div className="px-3 py-3 text-label text-ink-muted">Nothing found for “{q}”. Try a number such as SRQ-000123, {vocab.aPartner}, or {vocab.aItem} size like 195 65.</div>}
+      {GROUP_KEYS.map((key, gi) => { const title = groupTitle(key); return results![key].length > 0 && (
         <div key={key} role="group" aria-label={title}>
           <div className="px-3 pt-2 pb-1 text-caption font-semibold tracking-wide text-ink-muted uppercase">{title}</div>
           {results![key].map((h, j) => {
@@ -116,7 +119,7 @@ export function GlobalSearch() {
             );
           })}
         </div>
-      ))}
+      ); })}
     </div>
   );
 
@@ -125,7 +128,7 @@ export function GlobalSearch() {
       <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-muted" aria-hidden />
       <input ref={input} type="search" role="combobox" aria-label="Search everything" aria-expanded={!!showing} aria-controls={listId}
         aria-autocomplete="list" aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
-        placeholder="Search numbers, dealers, tyres…" value={q} autoComplete="off" spellCheck={false}
+        placeholder={`Search numbers, ${vocab.partners}, ${vocab.items}…`} value={q} autoComplete="off" spellCheck={false}
         onChange={(e) => onType(e.target.value)} onFocus={() => results && setOpen(true)} onKeyDown={onKeyDown}
         className="h-9 w-full rounded-control border border-line bg-subtle pr-9 pl-9 text-body text-ink placeholder:text-ink-muted focus:border-ink focus:bg-surface focus:outline-none" />
       {busy ? <span className="absolute top-1/2 right-3 size-3.5 -translate-y-1/2 animate-spin rounded-full border-2 border-line border-t-ink" aria-hidden />

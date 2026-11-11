@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { UserOut } from "@/lib/types";
 import { useReference } from "../pickers";
 import { Alert, Button, Field, Modal, Select, Textarea } from "../ui";
+import { vocab } from "@/lib/terms";
 
 export function EscalateDialog({ number, busy, error, onClose, onSubmit }: {
   number: string; busy: boolean; error: string | null; onClose: () => void; onSubmit: (body: { to_user_id: number; note: string | null }) => void;
@@ -21,7 +22,7 @@ export function EscalateDialog({ number, busy, error, onClose, onSubmit }: {
       <Alert>{error}</Alert>
       <Field label="Relationship Manager" required>{(id) => <Select id={id} value={to} placeholder={rms ? "Choose…" : "Loading…"} required
         onChange={(e) => setTo(e.target.value ? Number(e.target.value) : "")} options={(rms ?? []).map((u) => ({ value: u.id, label: u.full_name }))} />}</Field>
-      <Field label="Note for the approver">{(id) => <Textarea id={id} rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Big order from a new dealer" />}</Field>
+      <Field label="Note for the approver">{(id) => <Textarea id={id} rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={`e.g. Big order from a new ${vocab.partner}`} />}</Field>
     </Modal>
   );
 }

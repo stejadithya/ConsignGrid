@@ -15,6 +15,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Balance } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 type QF = "all" | "low" | "out" | "backordered" | "incoming";
 
@@ -79,9 +80,9 @@ export default function WarehousePage() {
               emptyHint={all?.length === 0 ? "Receive stock to begin tracking warehouse inventory." : undefined}
               emptyAction={all?.length === 0 && can("inventory.receive") ? <ButtonLink size="sm" href="/purchasing"><PackagePlus aria-hidden />Receive goods</ButtonLink> : undefined} rowClassName={(b) => short(b) && "shadow-[inset_3px_0_0_var(--color-danger)]"}
               columns={[
-                { key: "p", mobile: "primary", header: "Product", mobileSort: "Tyre", value: (b) => `${b.product_name} ${b.sku}`, cell: (b) => <div className="flex items-center gap-1"><ProductCell name={b.product_name} sku={b.sku} /><StockOrigin locationId={b.location_id} productId={b.product_id} /></div> },
+                { key: "p", mobile: "primary", header: "Product", mobileSort: vocab.Item, value: (b) => `${b.product_name} ${b.sku}`, cell: (b) => <div className="flex items-center gap-1"><ProductCell name={b.product_name} sku={b.sku} /><StockOrigin locationId={b.location_id} productId={b.product_id} /></div> },
                 { key: "loc", header: "Warehouse", value: (b) => b.location_code, cell: (b) => <span className="whitespace-nowrap text-ink-secondary">{b.location_code}</span> },
-                { key: "oh", header: "On hand", align: "right", value: (b) => b.on_hand, cell: (b) => <NumLink href={links.movements(b.product_id, b.location_id)} title="Every movement of this tyre"><Qty value={b.on_hand} /></NumLink> },
+                { key: "oh", header: "On hand", align: "right", value: (b) => b.on_hand, cell: (b) => <NumLink href={links.movements(b.product_id, b.location_id)} title={`Every movement of this ${vocab.item}`}><Qty value={b.on_hand} /></NumLink> },
                 { key: "res", mobile: "field", mobileOrder: 2, header: "Reserved", align: "right", mobileSort: true, value: (b) => b.reserved, cell: (b) => <NumLink href={b.reserved ? links.reserved(b.product_id) : null} title="Who it is reserved for"><Qty value={b.reserved} /></NumLink> },
                 { key: "bl", header: "Blocked", align: "right", value: (b) => b.blocked, cell: (b) => <NumLink href={b.blocked ? links.movements(b.product_id, b.location_id) : null} title="When and why it was blocked"><Qty value={b.blocked} tone="warn" /></NumLink> },
                 { key: "av", mobile: "field", mobileOrder: 1, header: "Available", align: "right", mobileSort: true, value: (b) => b.available, cell: (b) => (

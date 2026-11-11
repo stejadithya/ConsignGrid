@@ -10,6 +10,7 @@ import { Alert, Badge, ButtonLink, Card, DataTable, Empty, Field, PageHeader, Qt
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
+import { vocab } from "@/lib/terms";
 
 type Row = Record<string, string | number | null>;
 
@@ -20,11 +21,11 @@ export default function ReportsPage() {
   const [reseller, setReseller] = useState<number | "">(user?.reseller_id ?? "");
   return (
     <>
-      <PageHeader title="Reports" subtitle="Mandatory: total consignment stock, outstanding backorders, dealer transaction history. Plus operational views."
+      <PageHeader title="Reports" subtitle={`Mandatory: total consignment stock, outstanding backorders, ${vocab.partner} transaction history. Plus operational views.`}
         actions={<><ButtonLink href="/consignment">Total consignment stock</ButtonLink><ButtonLink href="/backorders">Outstanding backorders</ButtonLink></>} />
       <Tabs active={tab} onChange={setTab} tabs={[
-        { id: "history", label: "Dealer transaction history" },
-        { id: "dealer-sku", label: "By dealer by SKU" },
+        { id: "history", label: `${vocab.Partner} transaction history` },
+        { id: "dealer-sku", label: `By ${vocab.partner} by SKU` },
         ...(staff ? [{ id: "warehouse", label: "Warehouse availability" }, { id: "demand", label: "Demand by SKU" },
           { id: "uninvoiced", label: "Sold, not invoiced" }, { id: "ageing", label: "Consignment ageing" }] : []),
         { id: "stocktake", label: "Stocktake discrepancies" },
@@ -34,12 +35,12 @@ export default function ReportsPage() {
         <>
           {staff && (
             <div className="mb-4 w-80">
-              <Field label="Dealer">
-                {(id) => <ResellerSelect id={id} value={reseller} onChange={setReseller} placeholder="Select a dealer" />}
+              <Field label={vocab.Partner}>
+                {(id) => <ResellerSelect id={id} value={reseller} onChange={setReseller} placeholder={`Select ${vocab.aPartner}`} />}
               </Field>
             </div>
           )}
-          {reseller ? <ResellerHistory resellerId={Number(reseller)} /> : <Card><Empty>Select a dealer to see its chronological ledger.</Empty></Card>}
+          {reseller ? <ResellerHistory resellerId={Number(reseller)} /> : <Card><Empty>Select {vocab.aPartner} to see its chronological ledger.</Empty></Card>}
         </>
       )}
       {tab === "dealer-sku" && <DealerSkuReport />}
@@ -52,13 +53,13 @@ export default function ReportsPage() {
         ["allocated", "Allocated", "n"], ["in_transit", "In transit", "n"], ["awaiting_supply", "Awaiting supply", "n"], ["warehouse_available", "WH available", "n"],
         ["incoming", "Incoming", "n"], ["uncovered_after_incoming", "Uncovered after incoming", "n"]]} />}
       {tab === "uninvoiced" && <Simple path="/reports/uninvoiced-sales" cols={[
-        ["reseller_name", "Dealer"], ["uninvoiced_qty", "Uninvoiced qty", "n"],
+        ["reseller_name", vocab.Partner], ["uninvoiced_qty", "Uninvoiced qty", "n"],
         ["on_draft_qty", "On an invoice record (not yet in Xero)", "n"], ["oldest_sale_date", "Oldest sale", "d"]]} />}
       {tab === "ageing" && <Simple path="/reports/consignment-ageing" cols={[
-        ["location_code", "Dealer / shop", "loc"], ["sku", "SKU"], ["on_hand", "On hand", "n"], ["last_sale", "Last sale", "dt"], ["days_since_sale", "Days since sale", "n"],
+        ["location_code", `${vocab.Partner} / ${vocab.site}`, "loc"], ["sku", "SKU"], ["on_hand", "On hand", "n"], ["last_sale", "Last sale", "dt"], ["days_since_sale", "Days since sale", "n"],
         ["last_movement", "Last movement", "dt"]]} />}
       {tab === "stocktake" && <Simple path="/reports/stocktake-discrepancies" cols={[
-        ["number", "Stocktake", "st"], ["count_date", "Date", "d"], ["reseller_name", "Dealer"], ["location_code", "Shop", "shop"], ["sku", "SKU"],
+        ["number", "Stocktake", "st"], ["count_date", "Date", "d"], ["reseller_name", vocab.Partner], ["location_code", vocab.Site, "shop"], ["sku", "SKU"],
         ["expected_qty", "Expected", "n"], ["counted_qty", "Counted", "n"], ["variance", "Variance", "n"], ["qty_sold", "Sold", "n"], ["qty_missing", "Written off (before 1.11)", "n"], ["status", "Status", "b"]]} />}
     </>
   );

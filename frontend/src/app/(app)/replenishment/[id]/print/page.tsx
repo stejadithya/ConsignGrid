@@ -9,6 +9,8 @@ import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, humanize } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 import type { RequestDetail, Reseller } from "@/lib/types";
+import { vocab } from "@/lib/terms";
+import { branding } from "@/config/branding";
 
 /** Printable pick sheet for one replenishment request (findings 16 and 22). Staff only; no prices. */
 export default function ReplenishmentPickSheetPage() {
@@ -17,7 +19,7 @@ export default function ReplenishmentPickSheetPage() {
   const staff = !!user && !user.reseller_id;
   const { data: r, error } = useApi<RequestDetail>(staff ? `/replenishment/requests/${id}` : null);
   const { data: dealer } = useApi<Reseller>(r ? `/resellers/${r.reseller_id}` : null);
-  if (!staff) return <Alert>The pick sheet is for dealership staff.</Alert>;
+  if (!staff) return <Alert>The pick sheet is for {branding.companyName} staff.</Alert>;
   if (error) return <Alert>{error}</Alert>;
   if (!r) return <Loading />;
   const shop = dealer?.locations.find((l) => l.id === r.location_id);
@@ -44,19 +46,19 @@ export default function ReplenishmentPickSheetPage() {
         </header>
         <section className="grid grid-cols-2 gap-6 border-b border-line py-4">
           <div>
-            <div className="text-caption tracking-wide text-ink-muted uppercase">Dealer</div>
+            <div className="text-caption tracking-wide text-ink-muted uppercase">{vocab.Partner}</div>
             <div className="font-semibold">{r.reseller_name}</div>
             <div>Account {dealer?.account_ref ?? "…"}</div>
           </div>
           <div>
-            <div className="text-caption tracking-wide text-ink-muted uppercase">Shop and delivery address</div>
+            <div className="text-caption tracking-wide text-ink-muted uppercase">{vocab.Site} and delivery address</div>
             <div className="font-semibold">{shop?.name ?? r.location_code} <span className="sku text-label">{r.location_code}</span></div>
             <div>{[shop?.address_line1, shop?.address_line2, shop?.city, shop?.postcode].filter(Boolean).join(", ")}</div>
           </div>
         </section>
         <table className="mt-4 w-full">
           <thead className="border-y border-line-strong text-left text-caption text-ink-secondary uppercase">
-            <tr><th className="py-2 pr-2">SKU</th><th className="pr-2">Tyre</th><th className="pr-2 text-right">Required</th>
+            <tr><th className="py-2 pr-2">SKU</th><th className="pr-2">{vocab.Item}</th><th className="pr-2 text-right">Required</th>
               <th className="pr-2 text-right">To pick</th><th className="pr-2 text-center">Picked</th><th>Notes</th></tr>
           </thead>
           <tbody>

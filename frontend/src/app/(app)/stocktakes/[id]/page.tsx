@@ -17,6 +17,7 @@ import type { Stocktake, StocktakeLine } from "@/lib/types";
 interface Contact { role: string; name: string; email: string; phone: string | null }
 import { StocktakeHeader } from "@/components/StocktakeHeader";
 import { branding } from "@/config/branding";
+import { vocab } from "@/lib/terms";
 
 export default function StocktakeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -88,34 +89,34 @@ export default function StocktakeDetailPage() {
       <StocktakeHeader dealer={user?.reseller_id ? st.reseller_name : <Link className="link" href={`/resellers/${st.reseller_id}`}>{st.reseller_name}</Link>}
         accountRef={st.account_ref} shop={st.location_name} code={st.location_code} address={st.location_address} city={st.location_city} rep={st.sales_rep} />
       {st.recount_of_id && <Alert tone="info">This is a re-count of <Link className="underline" href={`/stocktakes/${st.recount_of_id}`}>{st.recount_of_number}</Link>.</Alert>}
-      {st.status === "SUPERSEDED" && <Alert tone="info">Re-counted{st.superseded_by_id ? <> in <Link className="underline" href={`/stocktakes/${st.superseded_by_id}`}>{st.superseded_by_number}</Link></> : ""}. The tyres this check held are free again.</Alert>}
+      {st.status === "SUPERSEDED" && <Alert tone="info">Re-counted{st.superseded_by_id ? <> in <Link className="underline" href={`/stocktakes/${st.superseded_by_id}`}>{st.superseded_by_number}</Link></> : ""}. The {vocab.items} this check held are free again.</Alert>}
       {awaiting && (
-        <Alert tone={st.overdue ? "error" : "warn"} title={isOwnReseller ? "Some tyres weren't found" : "Waiting for the dealer"}>
-          {st.total_shortage} tyre(s) weren&apos;t found at the stock check.{" "}
+        <Alert tone={st.overdue ? "error" : "warn"} title={isOwnReseller ? `Some ${vocab.items} weren't found` : `Waiting for the ${vocab.partner}`}>
+          {st.total_shortage} {vocab.item}(s) weren&apos;t found at the stock check.{" "}
           {isOwnReseller ? <>You have {st.find_days ?? 5} days to find them. If you find them, ask for a re-check. If not, they&apos;ll be invoiced as sold on <b>{fmtDate(st.confirm_due_at)}</b>.</>
-            : <>The dealer has until <b>{fmtDate(st.confirm_due_at)}</b> to find them or ask for a re-check; then they are invoiced as sold automatically.</>}
+            : <>The {vocab.partner} has until <b>{fmtDate(st.confirm_due_at)}</b> to find them or ask for a re-check; then they are invoiced as sold automatically.</>}
           {st.reminder_count ? ` ${st.reminder_count} reminder(s) sent.` : ""} They are held meanwhile so they cannot be sold or moved.
         </Alert>
       )}
       {st.status === "RECHECK_REQUESTED" && (
         <Alert tone="info" title="Re-check requested">
-          {st.recheck_requested_by ?? "The dealer"} found the tyres on {fmtDateTime(st.recheck_requested_at)}{st.recheck_note ? `: “${st.recheck_note}”` : ""}.
+          {st.recheck_requested_by ?? `The ${vocab.partner}`} found the {vocab.items} on {fmtDateTime(st.recheck_requested_at)}{st.recheck_note ? `: “${st.recheck_note}”` : ""}.
           {isOwnReseller ? " Your sales rep or the warehouse will re-count them. Nothing will be invoiced meanwhile." : " Start a re-count when you visit. The automatic invoicing is paused."}
         </Alert>
       )}
       {st.status === "DISPUTED" && (
         <Alert tone="warn" title="Disputed">
-          {st.disputed_by ?? "The dealer"} raised a dispute on {fmtDateTime(st.disputed_at)}: “{st.dispute_note}”.
-          {isOwnReseller ? " The warehouse and your Relationship Manager will contact you. Nothing will be invoiced meanwhile." : " Follow up with the dealer: start a re-count, or invoice the shortage with a reason. The automatic invoicing is paused."}
+          {st.disputed_by ?? `The ${vocab.partner}`} raised a dispute on {fmtDateTime(st.disputed_at)}: “{st.dispute_note}”.
+          {isOwnReseller ? " The warehouse and your Relationship Manager will contact you. Nothing will be invoiced meanwhile." : ` Follow up with the ${vocab.partner}: start a re-count, or invoice the shortage with a reason. The automatic invoicing is paused.`}
         </Alert>
       )}
       {people && people.length > 0 && <Contacts people={people} />}
       {canConfirm && <ConfirmShortages st={st} onDone={setData} onBehalf={!isOwnReseller} />}
       {st.status === "APPROVED" && st.invoice_id && (
-        <Alert tone="info">The tyres not found were invoiced as sold: invoice record{" "}
+        <Alert tone="info">The {vocab.items} not found were invoiced as sold: invoice record{" "}
           {can("invoice.read") && st.invoice_number ? <Link className="underline" href={`/invoices/${st.invoice_id}`}>{st.invoice_number}</Link> : "created"}
           {can("invoice.create") ? ", to mark as invoiced in Xero" : ""}. Replacements were raised.
-          {st.confirmed_on_behalf_reason ? ` ${st.confirmed_on_behalf_reason.startsWith("Automatically") ? st.confirmed_on_behalf_reason : `Confirmed on the dealer's behalf: ${st.confirmed_on_behalf_reason}`}.` : ""}</Alert>
+          {st.confirmed_on_behalf_reason ? ` ${st.confirmed_on_behalf_reason.startsWith("Automatically") ? st.confirmed_on_behalf_reason : `Confirmed on the ${vocab.partner}'s behalf: ${st.confirmed_on_behalf_reason}`}.` : ""}</Alert>
       )}
       {submitted && unclassified > 0 && <Alert tone="warn">{unclassified} line(s) have an unclassified shortage. Classify each shortage as sold (chargeable) or missing (loss) — missing stock is never assumed sold.</Alert>}
       {st.status === "APPROVED" && <Alert tone="success">{st.total_shortage ? "Confirmed" : "Posted"} by {st.approved_by ?? `${branding.productName} (automatically)`} on {fmtDateTime(st.approved_at)}. {st.sale_id ? <Link className="underline" href={`/sales?sale=${st.sale_id}`}>View the resulting sale</Link> : "No sales were confirmed."}</Alert>}
@@ -124,11 +125,11 @@ export default function StocktakeDetailPage() {
         { label: "Counted", value: st.lines.reduce((a, l) => a + l.counted_qty, 0), hint: `${st.lines.reduce((a, l) => a + l.counted_damaged_qty, 0)} damaged` },
         { label: "Net variance", value: `${st.total_variance > 0 ? "+" : ""}${st.total_variance}`, tone: st.total_variance < 0 ? "danger" : st.total_variance > 0 ? "ok" : "default" },
         awaiting
-          ? { label: "Not found, awaiting dealer", value: st.total_shortage ?? 0, tone: st.overdue ? "danger" : "warn", hint: `Due ${fmtDateTime(st.confirm_due_at)}` }
+          ? { label: `Not found, awaiting ${vocab.partner}`, value: st.total_shortage ?? 0, tone: st.overdue ? "danger" : "warn", hint: `Due ${fmtDateTime(st.confirm_due_at)}` }
           : { label: "Shortages to classify", value: unclassified, tone: unclassified ? "warn" : "default", hint: "Sold or missing — never assumed sold" },
       ]} />
       <Card padded={false} title="Count lines" subtitle="Expected vs counted quantity per SKU">
-        <DataTable mobile="cards" density="comfortable" label="Counted tyres" search={false} rows={st.lines} rowKey={(l) => l.id}
+        <DataTable mobile="cards" density="comfortable" label={`Counted ${vocab.items}`} search={false} rows={st.lines} rowKey={(l) => l.id}
           columns={[
             { key: "sku", mobile: "primary", header: "Product", cell: (l) => <ProductCell name={l.product_name} sku={l.sku} /> },
             { key: "e", mobile: "field", mobileOrder: 1, header: "Expected", align: "right", cell: (l) => <Qty value={l.expected_qty} zeroMuted={false} /> },
@@ -154,11 +155,11 @@ export default function StocktakeDetailPage() {
         <Button variant="primary" disabled={first.disabled} onClick={first.onSelect}>{NextIcon && <NextIcon aria-hidden />}{first.label}</Button>
       </MobileActionBar>}
       <ConfirmDialog open={confirm === "approve"} title="Approve stocktake" busy={action.busy} error={action.error} confirmLabel="Approve and post"
-        message="This posts a confirmed sale for sold quantities (chargeable, triggers replenishment), loss adjustments for missing stock, gains for surpluses, and blocks damaged tyres."
+        message={`This posts a confirmed sale for sold quantities (chargeable, triggers replenishment), loss adjustments for missing stock, gains for surpluses, and blocks damaged ${vocab.items}.`}
         onClose={() => setConfirm(null)}
         onConfirm={async () => { const r = await action.run(() => api.post<Stocktake>(`/stocktakes/${st.id}/approve`)); if (r) { setData(r); setConfirm(null); } }} />
       <Modal open={confirm === "recheck"} title="I found them, please re-check" onClose={close}
-        description="Your sales rep or the warehouse re-counts the tyres. Nothing is invoiced while you wait."
+        description={`Your sales rep or the warehouse re-counts the ${vocab.items}. Nothing is invoiced while you wait.`}
         footer={<><Button onClick={close}>Back</Button><Button variant="primary" disabled={action.busy}
           onClick={() => post("request-recheck", { note: text.trim() || null })}>{action.busy ? "Sending…" : "Ask for a re-check"}</Button></>}>
         <Alert>{action.error}</Alert>
@@ -172,7 +173,7 @@ export default function StocktakeDetailPage() {
         <Field label="What is wrong?" required>{(fid) => <Textarea id={fid} rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Two of these were returned to the warehouse last week" />}</Field>
       </Modal>
       <ConfirmDialog open={confirm === "recount"} title="Start re-count" busy={action.busy} error={action.error} confirmLabel="Start re-count" onClose={close}
-        message={`${st.number} is marked as re-counted and the tyres it held are released. A new draft count for the same shop opens with the ${st.lines.filter((l) => l.shortage).length} SKU(s) that weren't found.`}
+        message={`${st.number} is marked as re-counted and the ${vocab.items} it held are released. A new draft count for the same ${vocab.site} opens with the ${st.lines.filter((l) => l.shortage).length} SKU(s) that weren't found.`}
         onConfirm={async () => { const r = await action.run(() => api.post<Stocktake>(`/stocktakes/${st.id}/recount`)); if (r) { close(); router.push(`/stocktakes/${r.id}`); } }} />
       <ConfirmDialog open={confirm === "cancel"} title="Cancel stocktake" danger requireReason busy={action.busy} error={action.error}
         onClose={() => setConfirm(null)}
@@ -191,8 +192,8 @@ function ConfirmShortages({ st, onDone, onBehalf }: { st: Stocktake; onDone: (s:
   const total = short.reduce((a, l) => a + l.shortage, 0);
 
   return (
-    <Card className="mb-4" title={onBehalf ? "Invoice on the dealer's behalf" : "Tyres not found"}
-      subtitle="These tyres weren't on the shelf at the count. If they're not found, they are invoiced as sold and replaced.">
+    <Card className="mb-4" title={onBehalf ? `Invoice on the ${vocab.partner}'s behalf` : `${vocab.Items} not found`}
+      subtitle={`These ${vocab.items} weren't on the shelf at the count. If they're not found, they are invoiced as sold and replaced.`}>
       <Alert>{action.error}</Alert>
       <div className="divide-y divide-line rounded-control border border-line">
         {short.map((l) => (
@@ -203,12 +204,12 @@ function ConfirmShortages({ st, onDone, onBehalf }: { st: Stocktake; onDone: (s:
         ))}
       </div>
       {onBehalf && (
-        <div className="mt-3"><Field label="Reason for invoicing on the dealer's behalf" required>
+        <div className="mt-3"><Field label={`Reason for invoicing on the ${vocab.partner}'s behalf`} required>
           {(id) => <Textarea id={id} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Agreed with the owner by phone" />}
         </Field></div>
       )}
       <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
-        <span className="text-label text-ink-secondary">{total} tyre(s) will be invoiced and replaced</span>
+        <span className="text-label text-ink-secondary">{total} {vocab.item}(s) will be invoiced and replaced</span>
         <Button variant="primary" disabled={action.busy || (onBehalf && reason.trim().length < 3)}
           onClick={async () => {
             const res = await action.run(() => api.post<Stocktake>(`/stocktakes/${st.id}/confirm`, {

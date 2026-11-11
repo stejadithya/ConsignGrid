@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { branding } from "@/config/branding";
 import { fmtDateTime } from "@/lib/format";
 import { cx, EmptyState, IconChip, KPI_HINT, KPI_LABEL, KPI_VALUE, PageHeader, SectionHeader, type Tone } from "../ui";
+import { vocab } from "@/lib/terms";
 
 export function greeting() {
   const h = new Date().getHours();
@@ -119,7 +120,7 @@ const ROLE_LABELS: Record<RoleTheme, { label: string; icon: LucideIcon }> = {
   owner: { label: "Owner's overview", icon: Briefcase },
   warehouse: { label: "Warehouse floor", icon: Warehouse },
   field: { label: "Field day", icon: MapPin },
-  dealer: { label: "My shop", icon: Store },
+  dealer: { get label() { return `My ${vocab.site}`; }, icon: Store },
   system: { label: "System", icon: ShieldCheck },
   finance: { label: "Billing", icon: Receipt },
 };

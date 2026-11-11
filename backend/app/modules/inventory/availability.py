@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError
+from app.core.industry import vocab
 from app.modules.customers.models import Location, LocationType, Reseller, ResellerStatus
 from app.modules.inventory.models import StockBalance
 from app.modules.inventory.service import default_warehouse
@@ -35,7 +36,7 @@ def check(db: Session, product_ids: list[int], dealer_location_id: int | None = 
     if dealer_location_id is not None:
         loc = db.get(Location, dealer_location_id)
         if loc is None or loc.type != LocationType.CONSIGNMENT:
-            raise NotFoundError("Dealer location not found")
+            raise NotFoundError(f"{vocab.Partner} location not found")
         dealer_id = loc.reseller_id
         for a in out.values():
             a.at_this_location, a.dealer_total_on_hand = {"on_hand": 0, "available": 0}, 0

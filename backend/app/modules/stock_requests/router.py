@@ -223,7 +223,7 @@ def _detail(db, user: User, request_id: int) -> StockRequestDetailOut:
 def inventory_overview(db: DB, user: StockReader):
     """Per SKU: Total = warehouse on hand + shipped (in transit); Available = Total − Reserved − Shipped − Blocked."""
     if scoped_reseller_id(user) is not None:
-        raise PermissionDeniedError("Warehouse stock is visible to dealership staff only")
+        raise PermissionDeniedError("Warehouse stock is visible to staff only")
     sums: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     rows = db.execute(
         select(StockBalance.product_id, Location.type, func.sum(StockBalance.on_hand), func.sum(StockBalance.reserved),

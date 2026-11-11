@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import BusinessRuleError
+from app.core.industry import vocab
 from app.modules.catalogue.models import Product
 from app.modules.customers.models import Location, LocationType, Reseller
 from app.modules.identity.models import User
@@ -24,23 +25,33 @@ from app.modules.inventory.schemas import OpeningBalanceIn, QtyLine
 
 MAX_ROWS = 5000
 REASON = "Initial stock (backorder): imported from Excel"
-HEADERS = ("SKU Code", "Quantity", "Shop code")
-_NAMES = {"sku": ("skucode", "sku", "code"), "qty": ("quantity", "qty", "quantityheld"),
-          "shop": ("shopcode", "shop", "location", "locationcode")}
+
+
+def headers() -> tuple[str, str, str]:
+    """Column headers; the site column follows the Industry Pack ("Shop code", "Location code"…)."""
+    return ("SKU Code", "Quantity", f"{vocab.Site} code")
+
+
+def _names() -> dict[str, tuple[str, ...]]:
+    site = _norm(vocab.site)
+    return {"sku": ("skucode", "sku", "code"), "qty": ("quantity", "qty", "quantityheld"),
+            "shop": ("shopcode", "shop", "location", "locationcode", site, site + "code")}
 
 
 def template() -> bytes:
     wb = Workbook()
     ws = wb.active
     ws.title = "Initial stock"
-    for col, h in enumerate(HEADERS, start=1):
+    cols = headers()
+    for col, h in enumerate(cols, start=1):
         c = ws.cell(row=1, column=col, value=h)
         c.font = Font(bold=True)
-        c.fill = PatternFill("solid", fgColor="FDDA00" if h != "Shop code" else "EDEDED")
+        c.fill = PatternFill("solid", fgColor="FDDA00" if h != cols[2] else "EDEDED")
         ws.column_dimensions[c.column_letter].width = 18
     for row in range(2, 2002):
         ws[f"A{row}"].number_format = "@"
-    ws["E1"] = "One row per tyre and shop. Shop code is optional when the dealer has a single shop."
+    ws["E1"] = (f"One row per {vocab.item} and {vocab.site}. {vocab.Site} code is optional when the {vocab.partner} "
+                f"has a single {vocab.site}.")
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -65,7 +76,7 @@ def check(db: Session, reseller: Reseller, content: bytes) -> dict[str, Any]:
     cols: dict[str, int] = {}
     header_at = None
     for idx, row in enumerate(rows[:10]):
-        found = {key: c for c, cell in enumerate(row) for key, names in _NAMES.items() if _norm(cell) in names}
+        found = {key: c for c, cell in enumerate(row) for key, names in _names().items() if _norm(cell) in names}
         if "sku" in found and "qty" in found:
             cols, header_at = found, idx
             break
@@ -103,11 +114,12 @@ def check(db: Session, reseller: Reseller, content: bytes) -> dict[str, Any]:
             errors.append(f"Quantity '{qty_raw}' must be a whole number above 0")
         shop = shops.get(shop_code) if shop_code else only_shop
         if shop is None:
-            errors.append(f"Unknown shop {shop_code}" if shop_code else "Shop code is needed: this dealer has more than one shop")
+            errors.append(f"Unknown {vocab.site} {shop_code}" if shop_code
+                          else f"{vocab.Site} code is needed: this {vocab.partner} has more than one {vocab.site}")
         if shop and sku:
             key = (shop.code, sku)
             if key in seen:
-                errors.append(f"SKU {sku} appears more than once for shop {shop.code} (first on row {seen[key]})")
+                errors.append(f"SKU {sku} appears more than once for {vocab.site} {shop.code} (first on row {seen[key]})")
             else:
                 seen[key] = rownum
         out.append({"row": rownum, "sku": sku, "product_id": product.id if product else None,

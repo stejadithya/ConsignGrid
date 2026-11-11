@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, NotFoundError
+from app.core.industry import vocab
 from app.core.permissions import Role
 from app.modules.audit.service import record_audit
 from app.modules.catalogue.models import Product
@@ -82,7 +83,7 @@ class Entry:
 
 def _dealer_locations(db: Session, reseller_id: int) -> dict[int, Location]:
     if db.get(Reseller, reseller_id) is None:
-        raise NotFoundError("Dealer not found")
+        raise NotFoundError(f"{vocab.Partner} not found")
     return {loc.id: loc for loc in db.execute(select(Location).where(
         Location.reseller_id == reseller_id, Location.type == LocationType.CONSIGNMENT)).scalars()}
 
@@ -107,7 +108,8 @@ def _lock(db: Session, txn: InventoryTransaction, location_id: int) -> tuple[str
         Stocktake.location_id == location_id, Stocktake.status.not_in(_NOT_A_COUNT))
         .order_by(Stocktake.id).limit(1)).scalar_one_or_none()
     if counted:
-        return f"A stock check ({counted}) has been done at this shop since. Use a stock check for any differences.", until
+        return (f"A stock check ({counted}) has been done at this {vocab.site} since. "
+                "Use a stock check for any differences."), until
     if datetime.now(UTC) > until:
         return (f"Initial stock can be corrected for {get_settings().initial_stock_correction_days} days. "
                 "Use a stock check for any differences."), until
@@ -175,7 +177,7 @@ def correct(db: Session, actor: User, reseller_id: int, transaction_id: int,
     wanted: dict[int, int] = {}
     for pid, qty in lines:
         if pid in wanted:
-            raise BusinessRuleError("Each tyre can appear only once")
+            raise BusinessRuleError(f"Each {vocab.item} can appear only once")
         wanted[pid] = qty
     products = {p.id: p for p in db.execute(select(Product).where(Product.id.in_(list(wanted)))).scalars()}
     deltas: list[tuple[Product, int, int]] = []          # (product, before, after)
@@ -184,7 +186,7 @@ def correct(db: Session, actor: User, reseller_id: int, transaction_id: int,
         if p is None:
             raise NotFoundError("Product not found")
         if pid not in current and not p.is_active:
-            raise BusinessRuleError(f"{p.sku} is not an active tyre")
+            raise BusinessRuleError(f"{p.sku} is not an active {vocab.item}")
         before = current[pid].current if pid in current else 0
         if after == before:
             continue
@@ -192,8 +194,8 @@ def correct(db: Session, actor: User, reseller_id: int, transaction_id: int,
             free = current[pid].free_now
             if before - after > free:
                 raise BusinessRuleError(
-                    f"{p.display_name} ({p.sku}): only {free} of the {before} are still free at the shop, so it can go "
-                    f"down to {before - free} at the least. Sold, reserved or blocked tyres can't be corrected away.")
+                    f"{p.display_name} ({p.sku}): only {free} of the {before} are still free at the {vocab.site}, so it can go "
+                    f"down to {before - free} at the least. Sold, reserved or blocked {vocab.items} can't be corrected away.")
         deltas.append((p, before, after))
     if not deltas:
         raise BusinessRuleError("Nothing to change: the quantities are the same as now")

@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { compressPhoto, dataUrlKb } from "@/lib/image";
 import type { Me } from "@/lib/types";
 import { Field, Input, Textarea } from "./ui";
+import { vocab } from "@/lib/terms";
 
 export interface Receipt { receivedBy: string; notes: string; photos: string[] }
 export const blankReceipt = (): Receipt => ({ receivedBy: "", notes: "", photos: [] });
@@ -33,7 +34,7 @@ export function ReceiptFields({ value, onChange, user, showNotes = true }: {
   return (
     <div className="space-y-3">
       <Field label="Received by" required={required}
-        hint={required ? "Name of the person at the dealer who took the tyres." : "Optional: who took the tyres."}>
+        hint={required ? `Name of the person at the ${vocab.partner} who took the ${vocab.items}.` : `Optional: who took the ${vocab.items}.`}>
         {(id) => <Input id={id} value={value.receivedBy} maxLength={120} placeholder="e.g. Ravi (owner)"
           onChange={(e) => onChange({ ...value, receivedBy: e.target.value })} />}
       </Field>

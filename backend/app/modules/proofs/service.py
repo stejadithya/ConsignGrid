@@ -12,6 +12,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.core.errors import BusinessRuleError, NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.permissions import P, Role, role_has
 from app.modules.identity.models import User
 from app.modules.proofs.models import AppSetting, ProofPhoto
@@ -38,7 +39,7 @@ def ensure_can_confirm(db: Session, actor: User, *, reseller_id: int, carried_by
         return
     if carried_by_user_id is not None and actor.id != carried_by_user_id:
         raise PermissionDeniedError(
-            f"{_carrier_name(db, carried_by_user_id)} is carrying this {what.lower()}: only the dealer or "
+            f"{_carrier_name(db, carried_by_user_id)} is carrying this {what.lower()}: only the {vocab.partner} or "
             f"{_carrier_name(db, carried_by_user_id)} can confirm it was received")
 
 
@@ -48,7 +49,7 @@ def receipt_details(actor: User, received_by_name: str | None, notes: str | None
     text = (notes or "").strip() or None
     if actor.role == Role.SALES_REP:
         if not name or len(name) < 2:
-            raise BusinessRuleError("Enter the name of the person at the dealer who received the stock")
+            raise BusinessRuleError(f"Enter the name of the person at the {vocab.partner} who received the stock")
         if not text or len(text) < 3:
             raise BusinessRuleError("Add a short note about the hand-over (who was there, anything to remember)")
     return name, text

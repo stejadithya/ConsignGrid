@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.messages import KIND_REJECTION
 from app.core.numbering import next_number
 from app.core.permissions import P, Role, role_has
@@ -134,7 +135,7 @@ class LineIn:
 def _location(db: Session, actor: User, location_id: int) -> Location:
     location = db.get(Location, location_id)
     if location is None or location.type != LocationType.CONSIGNMENT:
-        raise BusinessRuleError("Choose a dealer consignment location")
+        raise BusinessRuleError(f"Choose {vocab.aPartner} consignment location")
     ensure_reseller_access(actor, location.reseller_id, "Location")
     if not location.is_active:
         raise BusinessRuleError(f"Location {location.code} is inactive")
@@ -146,7 +147,7 @@ def _require_active_reseller(db: Session, reseller_id: int) -> Reseller:
     reseller = db.get(Reseller, reseller_id)
     if reseller is None or reseller.status != ResellerStatus.ACTIVE:
         state = reseller.status.value.replace("_", " ").lower() if reseller else "missing"
-        raise BusinessRuleError(f"Dealer account is {state}; stock cannot be requested or approved")
+        raise BusinessRuleError(f"{vocab.Partner} account is {state}; stock cannot be requested or approved")
     return reseller
 
 
@@ -175,7 +176,7 @@ def _validate_lines(db: Session, lines: list[LineIn]) -> None:
 
 def _validate_header(actor: User, priority: Priority, required_date: date | None) -> None:
     if actor.is_reseller_user and priority == Priority.URGENT:
-        raise BusinessRuleError("Urgent priority is set by dealership staff; request High priority instead")
+        raise BusinessRuleError(f"Urgent priority is set by {get_settings().company_name} staff; request High priority instead")
     if required_date is not None and required_date < date.today():
         raise BusinessRuleError("Required date cannot be in the past")
 
@@ -321,14 +322,14 @@ def _hand_to_warehouse(db: Session, actor: User, sr: StockRequest, reseller: Res
         product = db.get(Product, ln.product_id)
         t = transfers.request_transfer(
             db, actor, destination_location_id=sr.location_id, product_id=ln.product_id, quantity=short,
-            reason=f"{reseller.business_name} asked us to get this tyre for them ({sr.number})", urgency=Priority.HIGH)
+            reason=f"{reseller.business_name} asked us to get this {vocab.item} for them ({sr.number})", urgency=Priority.HIGH)
         ln.qty_arranging, ln.arranging_transfer_id = short, t.id
         db.flush()
         _event(db, sr, actor, "ARRANGING", f"{short} × {product.tyre_label} handed to the warehouse to find from "
-               f"another dealer ({t.number})", details={"sku": product.sku, "quantity": short, "transfer": t.number})
+               f"another {vocab.partner} ({t.number})", details={"sku": product.sku, "quantity": short, "transfer": t.number})
         notify_users(db, team, f"Please find {product.tyre_label} for {reseller.business_name}",
                      f"{short} needed for {sr.number}. The warehouse has none to spare: please arrange it from a "
-                     f"dealer who holds it ({t.number}).", link=f"/transfers/{t.id}", entity_type="transfer",
+                     f"{vocab.partner} who holds it ({t.number}).", link=f"/transfers/{t.id}", entity_type="transfer",
                      entity_id=t.id, exclude=actor.id)
 
 
@@ -343,12 +344,12 @@ def arranged_transfer_update(db: Session, transfer, what: str, actor_id: int | N
     product = db.get(Product, ln.product_id)
     if what == "COLLECTED":
         notify(db, _requester_audience(db, sr), f"Good news: {product.tyre_label} is on its way",
-               f"The tyre we arranged for {sr.number} is on its way to you.", sr, exclude=actor_id)
-        _event(db, sr, None, "ARRANGED_ON_ITS_WAY", f"{product.tyre_label} arranged from another dealer is on its way "
+               f"The {vocab.item} we arranged for {sr.number} is on its way to you.", sr, exclude=actor_id)
+        _event(db, sr, None, "ARRANGED_ON_ITS_WAY", f"{product.tyre_label} arranged from another {vocab.partner} is on its way "
                f"({transfer.number})", audit=False)
     elif what in ("REJECTED", "CANCELLED"):
         notify_users(db, staff_in_roles(db, Role.WAREHOUSE_MANAGER, Role.RELATIONSHIP_MANAGER),
-                     f"{sr.number}: the dealer is still waiting for {product.tyre_label}",
+                     f"{sr.number}: the {vocab.partner} is still waiting for {product.tyre_label}",
                      f"{transfer.number} was {what.lower()}. {ln.qty_arranging} still need to be arranged for "
                      f"{db.get(Reseller, sr.reseller_id).business_name}.", link=link(sr),
                      entity_type="stock_request", entity_id=sr.id, exclude=actor_id)
@@ -440,7 +441,7 @@ def hand_back(db: Session, actor: User, request_id: int, note: str | None) -> St
 def request_callback(db: Session, actor: User, request_id: int, preferred_time: str, phone: str) -> StockRequest:
     """The dealer (own request) or a sales rep asks the supplier to call about an order (finding 21)."""
     if not actor.is_reseller_user and actor.role != Role.SALES_REP:
-        raise PermissionDeniedError("Only the dealer or a sales representative can ask for a call")
+        raise PermissionDeniedError(f"Only the {vocab.partner} or a sales representative can ask for a call")
     sr = get_scoped(db, actor, request_id)   # a dealer can only reach their own requests (404 otherwise)
     reseller = db.get(Reseller, sr.reseller_id)
     preferred_time, phone = preferred_time.strip(), phone.strip()
@@ -536,11 +537,11 @@ def decide(db: Session, actor: User, request_id: int, decisions: list[Decision],
             t = transfers.request_transfer(
                 db, actor, destination_location_id=sr.location_id, product_id=ln.product_id,
                 quantity=ln.qty_backordered, destination_request_id=req.id, urgency=sr.priority,
-                reason=f"Rest of {sr.number} for {reseller.business_name}: arranged from another dealer")
+                reason=f"Rest of {sr.number} for {reseller.business_name}: arranged from another {vocab.partner}")
             arranged_now.append(t)
             product = db.get(Product, ln.product_id)
             _event(db, sr, actor, "ARRANGING", f"{ln.qty_backordered} × {product.tyre_label} to be arranged from "
-                   f"another dealer ({t.number})", details={"sku": product.sku, "quantity": ln.qty_backordered,
+                   f"another {vocab.partner} ({t.number})", details={"sku": product.sku, "quantity": ln.qty_backordered,
                                                            "transfer": t.number})
     approved = sum(ln.qty_approved for ln in sr.lines)
     backordered = sum(ln.qty_backordered for ln in sr.lines)
@@ -574,7 +575,7 @@ def decide(db: Session, actor: User, request_id: int, decisions: list[Decision],
         # Any quantity not supplied: the dealer's users and the requester get the kind standard message (D5),
         # never the internal reason. Other staff (the dealer's sales rep) get the normal summary.
         kind_audience = {sr.created_by_user_id, *reseller_users(db, sr.reseller_id)}
-        body = KIND_REJECTION + (f" {approved} tyre(s) of your order are being prepared." if approved else "")
+        body = KIND_REJECTION + (f" {approved} {vocab.item}(s) of your order are being prepared." if approved else "")
         notify(db, kind_audience, f"Update on your order {sr.number}", body, sr, exclude=actor.id)
         notify(db, [u for u in _requester_audience(db, sr) if u not in kind_audience],
                f"{sr.number} {label.lower()}", summary, sr, exclude=actor.id)
@@ -798,7 +799,7 @@ def confirm_delivery(db: Session, actor: User, request_id: int, delivery_id: int
            from_status=prev.value, details={"delivery": delivery.number, "received": got, "shipped": sent,
                                             "delivered_on": delivery.delivered_on.isoformat(), "reference": reference})
     notify(db, [sr.created_by_user_id, sr.reviewed_by_user_id, delivery.dispatched_by_user_id],
-           f"{sr.number}: delivery confirmed", f"{got} of {sent} unit(s) received at the dealer{short}", sr,
+           f"{sr.number}: delivery confirmed", f"{got} of {sent} unit(s) received at the {vocab.partner}{short}", sr,
            exclude=actor.id)
     return delivery
 

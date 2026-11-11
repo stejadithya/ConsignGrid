@@ -21,6 +21,7 @@ from app.modules.inventory.router import router as inventory_router
 from app.modules.invoicing.router import router as invoicing_router
 from app.modules.partner.router import router as partner_router
 from app.modules.pilot.router import router as pilot_router
+from app.modules.platform.router import router as platform_router
 from app.modules.proofs.router import router as proofs_router
 from app.modules.purchasing.router import router as purchasing_router
 from app.modules.replenishment.router import router as replenishment_router
@@ -117,7 +118,7 @@ def create_app() -> FastAPI:
     for r in (identity_router, catalogue_router, customers_router, consignment_router, inventory_router,
               purchasing_router, sales_router, replenishment_router, transfers_router, stocktakes_router,
               invoicing_router, reporting_router, audit_router, pilot_router, stock_requests_router, notifications_router,
-              proofs_router, partner_router, search_router):
+              proofs_router, partner_router, search_router, platform_router):
         app.include_router(r, prefix="/api")
     return app
 

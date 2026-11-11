@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth";
 import { fmtDateTime, humanize } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Reseller, SourceOption, Transfer } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 const blankShipping = (): Shipping => ({ method: "SALES_REP", carrier: "", repId: "" });
 
@@ -41,7 +42,7 @@ function RouteChoice({ value, onChange }: { value: Route; onChange: (r: Route) =
   return (
     <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       <legend className="mb-1.5 text-label font-medium text-ink">Route</legend>
-      {([["DIRECT", "Direct to the dealer", "Collected and taken straight to the receiving dealer."],
+      {([["DIRECT", `Direct to the ${vocab.partner}`, `Collected and taken straight to the receiving ${vocab.partner}.`],
         ["VIA_WAREHOUSE", "Via the warehouse", "Brought to the warehouse to be received and checked, then delivered."]] as const).map(([v, title, hint]) => (
         <label key={v} className={`flex cursor-pointer gap-2.5 rounded-control border p-3 ${value === v ? "border-ink bg-subtle" : "border-line"}`}>
           <input type="radio" name="route" className="mt-0.5 size-4 accent-ink" checked={value === v} onChange={() => onChange(v)} />
@@ -136,7 +137,7 @@ export default function TransferDetailPage() {
     : awaitingCheck && !mayCheck
       ? <span className="self-center text-caption text-ink-muted">On its way to the warehouse to be checked</span>
     : t.status === "IN_TRANSIT" && !mayReceive && can("transfer.execute")
-      ? <span className="self-center text-caption text-ink-muted">To be confirmed by the dealer or {t.carried_by ?? t.collected_by}</span> : null;
+      ? <span className="self-center text-caption text-ink-muted">To be confirmed by the {vocab.partner} or {t.carried_by ?? t.collected_by}</span> : null;
   const more: MoreMenuItem[] = [
     ...(t.status === "REQUESTED" && can("transfer.approve") ? [{ label: "Reject transfer request", danger: true, onSelect: () => open("reject") }] : []),
     ...(["REQUESTED", "APPROVED"].includes(t.status) && can("transfer.approve") ? [{ label: "Cancel transfer", danger: true, onSelect: () => open("cancel") }] : []),
@@ -166,10 +167,10 @@ export default function TransferDetailPage() {
       )}
       <Card className="mb-4">
         <FlowPath
-          from={{ eyebrow: "From · supplying dealer", icon: Store, muted: !t.source_reseller_id,
+          from={{ eyebrow: `From · supplying ${vocab.partner}`, icon: Store, muted: !t.source_reseller_id,
             title: t.source_reseller_name ?? "Not yet selected", href: t.source_reseller_id ? `/resellers/${t.source_reseller_id}` : null,
             subtitle: t.source_location_code ?? "Chosen when the transfer is approved" }}
-          to={{ eyebrow: "To · receiving dealer", icon: Store, title: t.destination_reseller_name,
+          to={{ eyebrow: `To · receiving ${vocab.partner}`, icon: Store, title: t.destination_reseller_name,
             href: t.destination_reseller_id ? `/resellers/${t.destination_reseller_id}` : null, subtitle: t.destination_location_code }}
           via={<>{t.quantity} × {t.product_name} <span className="sku text-label">{t.sku}</span>{t.qty_in_transit > 0 ? ` · ${t.qty_in_transit} in transit` : ""}</>}
           tone={t.status === "RECEIVED_WITH_DISCREPANCY" ? "danger" : t.status === "IN_TRANSIT" ? "accent" : "default"} />
@@ -183,13 +184,13 @@ export default function TransferDetailPage() {
           {travel ? (
             <DefinitionList columns={2} items={[
               ["Travels with", travel], ["Arranged", t.shipping_arranged_at ? `${fmtDateTime(t.shipping_arranged_at)} · ${t.shipping_arranged_by ?? ""}` : null],
-              ["Route", viaWarehouse(t) ? "Via the warehouse (received and checked there)" : "Direct to the dealer"],
+              ["Route", viaWarehouse(t) ? "Via the warehouse (received and checked there)" : `Direct to the ${vocab.partner}`],
               ["Collected from", t.collected_from_name],
               ...(viaWarehouse(t) ? [["Checked at the warehouse", t.warehouse_received_at
                 ? `${fmtDateTime(t.warehouse_received_at)} · ${t.warehouse_received_by ?? ""}${t.warehouse_check_notes ? ` · ${t.warehouse_check_notes}` : ""}`
                 : "Not yet"] as [string, string]] : []),
             ]} />
-          ) : <p className="text-label text-ink-secondary">Say who collects the tyres from {t.source_reseller_name ?? "the supplying dealer"} and delivers them to {t.destination_reseller_name}: a sales representative (they are notified with both addresses) or a courier.</p>}
+          ) : <p className="text-label text-ink-secondary">Say who collects the {vocab.items} from {t.source_reseller_name ?? `the supplying ${vocab.partner}`} and delivers them to {t.destination_reseller_name}: a sales representative (they are notified with both addresses) or a courier.</p>}
         </Card>
       ) : null}
 
@@ -227,7 +228,7 @@ export default function TransferDetailPage() {
 
       {next && <MobileActionBar desktop="hidden">{next}</MobileActionBar>}
       <ConfirmDialog open={dialog === "approve"} title="Approve transfer" busy={action.busy} error={action.error} confirmLabel="Approve & reserve"
-        message="Select the supplying dealer. Approval reserves the stock at the source." onClose={() => setDialog(null)}
+        message={`Select the supplying ${vocab.partner}. Approval reserves the stock at the source.`} onClose={() => setDialog(null)}
         onConfirm={() => act("approve", { source_location_id: Number(sourceId), source_consent_reference: consent || null,
           ...(arrangeNow && shippingReady(shipping) ? { shipping: shippingIn(shipping, tracking, route) } : {}) })}>
         <Field label="Source location">{(fid) => <Select id={fid} value={sourceId} onChange={(e) => setSourceId(e.target.value)} placeholder="Select…"
@@ -245,7 +246,7 @@ export default function TransferDetailPage() {
         </fieldset>
       </ConfirmDialog>
       <Modal open={dialog === "shipping"} title="Arrange pick-up & delivery" onClose={() => setDialog(null)}
-        description={`Who collects ${t.quantity} × ${t.product_name} from ${t.source_reseller_name ?? "the supplying dealer"} and delivers to ${t.destination_reseller_name}.`}
+        description={`Who collects ${t.quantity} × ${t.product_name} from ${t.source_reseller_name ?? `the supplying ${vocab.partner}`} and delivers to ${t.destination_reseller_name}.`}
         footer={<><Button onClick={() => setDialog(null)}>Cancel</Button>
           <Button variant="primary" disabled={action.busy || !shippingReady(shipping)} onClick={() => act("shipping", shippingIn(shipping, tracking, route))}>
             {action.busy ? "Saving…" : "Save pick-up"}</Button></>}>
@@ -255,7 +256,7 @@ export default function TransferDetailPage() {
         <RouteChoice value={route} onChange={setRoute} />
       </Modal>
       <Modal open={dialog === "warehouse"} title="Received at the warehouse" onClose={() => setDialog(null)}
-        description={`${t.qty_in_transit} × ${t.product_name} collected from ${t.source_reseller_name ?? "the supplying dealer"}. Check them before ${t.carried_by ?? "the Sales Rep"} delivers to ${t.destination_reseller_name}. The stock stays in transit until it is delivered.`}
+        description={`${t.qty_in_transit} × ${t.product_name} collected from ${t.source_reseller_name ?? `the supplying ${vocab.partner}`}. Check them before ${t.carried_by ?? "the Sales Rep"} delivers to ${t.destination_reseller_name}. The stock stays in transit until it is delivered.`}
         footer={<><Button onClick={() => setDialog(null)}>Cancel</Button>
           <Button variant="primary" disabled={action.busy || checkNotes.trim().length < 3}
             onClick={() => act("warehouse-receipt", { notes: checkNotes.trim(), photos: checkPhotos })}>{action.busy ? "Saving…" : "Received and checked"}</Button></>}>
@@ -276,7 +277,7 @@ export default function TransferDetailPage() {
             {action.busy ? "Saving…" : "Record collection"}</Button></>}>
         <Alert>{action.error}</Alert>
         <Field label={`Quantity collected (max ${t.quantity})`}>{(fid) => <Input id={fid} type="number" min={1} max={t.quantity} value={qty} onChange={(e) => setQty(e.target.value)} />}</Field>
-        <Field label="Collected from" required={!!t.carried_by_user_id} hint="Name of the person at the dealer who handed the tyres over.">
+        <Field label="Collected from" required={!!t.carried_by_user_id} hint={`Name of the person at the ${vocab.partner} who handed the ${vocab.items} over.`}>
           {(fid) => <Input id={fid} value={collectedFrom} maxLength={120} placeholder="e.g. Sam (workshop manager)" onChange={(e) => setCollectedFrom(e.target.value)} />}
         </Field>
         <PhotoPicker photos={collectPhotos} onChange={setCollectPhotos} label="Photo at collection" alt="Collection photo" />

@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { todayIso } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import type { AllocationPosition, Reseller, Stocktake } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 interface CountLine { product: number | ""; sku?: string; name?: string; counted: string; damaged: string }
 
@@ -57,13 +58,13 @@ export default function NewStocktakePage() {
 
   return (
     <>
-      <PageHeader title="New stocktake" subtitle="Count what is physically on the shelf, including damaged tyres. SKUs in stock but not counted are treated as zero on submission." />
+      <PageHeader title="New stocktake" subtitle={`Count what is physically on the shelf, including damaged ${vocab.items}. SKUs in stock but not counted are treated as zero on submission.`} />
       <Alert>{action.error}</Alert>
       <Card className="max-w-3xl">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Dealer" required hint="Search by name or account reference">{(id) => <ResellerSelect id={id} value={dealerId} onChange={changeDealer} placeholder="Choose the dealer…" />}</Field>
-          <Field label="Shop" required>{(id) => <Select id={id} value={shopId} disabled={!dealer} onChange={(e) => changeLocation(e.target.value ? Number(e.target.value) : "")}
-            placeholder={dealer ? "Choose the shop…" : "Choose the dealer first"}
+          <Field label={vocab.Partner} required hint="Search by name or account reference">{(id) => <ResellerSelect id={id} value={dealerId} onChange={changeDealer} placeholder={`Choose the ${vocab.partner}…`} />}</Field>
+          <Field label={vocab.Site} required>{(id) => <Select id={id} value={shopId} disabled={!dealer} onChange={(e) => changeLocation(e.target.value ? Number(e.target.value) : "")}
+            placeholder={dealer ? `Choose the ${vocab.site}…` : `Choose the ${vocab.partner} first`}
             options={shops.map((l) => ({ value: l.id, label: `${l.name} — ${[l.address_line1, l.city].filter(Boolean).join(", ") || l.code}` }))} />}</Field>
           <Field label="Count date" required>{(id) => <Input id={id} type="date" max={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
         </div>

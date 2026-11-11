@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { useApi } from "@/lib/hooks";
 import type { Balance, Product, ReplenishmentRequest } from "@/lib/types";
 import { ShopLabel } from "@/components/pickers";
+import { vocab } from "@/lib/terms";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -69,9 +70,9 @@ export default function ProductDetailPage() {
                 { key: "av", header: "Available", align: "right", cell: (b) => <span className="font-semibold"><Qty value={b.available} zeroMuted={false} /></span> },
               ]} />
           </Card>
-          <Card title="Dealer consignment stock" className="xl:col-span-2" padded={false}>
+          <Card title={`${vocab.Partner} consignment stock`} className="xl:col-span-2" padded={false}>
             <DataTable label="Stock by location" rows={split.cons.filter((b) => b.on_hand > 0)} rowKey={(b) => b.location_id} pageSize={20} searchPlaceholder="Search location…"
-              empty="No dealer holds this product"
+              empty={`No ${vocab.partner} holds this product`}
               columns={[
                 { key: "l", header: "Location", value: (b) => `${b.location_code} ${b.location_name}`, cell: (b) => (
                   <div>{b.reseller_id ? <Link className="link" href={`/resellers/${b.reseller_id}`}>{b.location_name}</Link> : b.location_name}<div className="text-caption text-ink-muted">{b.location_code}</div></div>

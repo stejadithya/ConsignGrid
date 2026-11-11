@@ -4,6 +4,7 @@ import { Check, HeartHandshake } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { Button } from "./ui";
+import { vocab } from "@/lib/terms";
 
 /*
  * "Get this tyre for me". When the warehouse cannot cover a tyre on a stock request, the requester sees a kind
@@ -12,7 +13,7 @@ import { Button } from "./ui";
  */
 
 export const FIND_TITLE = "Leave this one with us";
-export const FIND_TEXT = "We're arranging this tyre for you and will let you know as soon as it's on its way.";
+export const findText = () => `We're arranging this ${vocab.item} for you and will let you know as soon as it's on its way.`;
 
 /** Which tyres need the warehouse's help. Asks only yes / no (no stock figures), and only after typing settles. */
 export function useNeedsHelp(lines: { product: number | ""; qty: string }[]): Set<number> {
@@ -45,18 +46,18 @@ export function FindForMeNote({ chosen, onChange }: { chosen: boolean; onChange:
         {chosen ? (
           <>
             <p className="flex items-center gap-1.5 font-medium text-ink"><Check className="size-4 text-success" aria-hidden />Thank you! Our team is on it.</p>
-            <p className="text-label text-ink-secondary">{FIND_TEXT}</p>
+            <p className="text-label text-ink-secondary">{findText()}</p>
           </>
         ) : (
           <>
             <p className="font-medium text-ink">{FIND_TITLE}</p>
-            <p className="text-label text-ink-secondary">{FIND_TEXT}</p>
+            <p className="text-label text-ink-secondary">{findText()}</p>
           </>
         )}
       </div>
       {chosen
         ? <button type="button" className="self-center text-caption text-ink-muted underline underline-offset-4 hover:text-ink" onClick={() => onChange(false)}>Undo</button>
-        : <Button size="sm" variant="primary" className="ml-8 self-center sm:ml-0" onClick={() => onChange(true)}>Get this tyre for me</Button>}
+        : <Button size="sm" variant="primary" className="ml-8 self-center sm:ml-0" onClick={() => onChange(true)}>Get this {vocab.item} for me</Button>}
     </div>
   );
 }
@@ -66,7 +67,7 @@ export function ArrangingNote() {
   return (
     <div className="mt-1.5 flex items-start gap-2 rounded-md border border-info-line bg-info-soft px-2.5 py-2 text-caption">
       <HeartHandshake className="mt-px size-4 shrink-0 text-info" aria-hidden />
-      <span><b className="font-medium text-ink">{FIND_TITLE}.</b> <span className="text-ink-secondary">{FIND_TEXT}</span></span>
+      <span><b className="font-medium text-ink">{FIND_TITLE}.</b> <span className="text-ink-secondary">{findText()}</span></span>
     </div>
   );
 }

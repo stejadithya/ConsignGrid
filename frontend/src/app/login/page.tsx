@@ -9,6 +9,7 @@ import { Alert, Button, Field, Input } from "@/components/ui";
 import { branding } from "@/config/branding";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { vocab } from "@/lib/terms";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -52,7 +53,7 @@ export default function LoginPage() {
             <span className="block">Faster replenishment.</span>
           </h1>
           <p className="mt-3 text-body-lg text-ink-secondary">
-            One view of stock across your warehouse and dealer network. Manage consignment, replenishment, transfers and backorders together.
+            One view of stock across your warehouse and {vocab.partner} network. Manage consignment, replenishment, transfers and backorders together.
           </p>
         </div>
         <OperationalLoop className="order-4 lg:max-w-120" />
@@ -67,7 +68,7 @@ export default function LoginPage() {
           <form onSubmit={submit} noValidate className="mt-6 space-y-5">
             <Alert>{error}</Alert>
             <Field label="Email" error={fieldErrors.email}>
-              {(id, describedBy) => <Input id={id} type="email" inputMode="email" autoComplete="username" placeholder="name@dealership.com" className="h-11"
+              {(id, describedBy) => <Input id={id} type="email" inputMode="email" autoComplete="username" placeholder="name@company.com" className="h-11"
                 aria-invalid={!!fieldErrors.email} aria-describedby={describedBy} value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }} />}
             </Field>
             <Field label="Password" error={fieldErrors.password}>
@@ -88,7 +89,7 @@ export default function LoginPage() {
               {busy ? <><Loader2 className="animate-spin" aria-hidden />Signing in…</> : <>Sign in<ArrowRight aria-hidden /></>}
             </Button>
             <p className="text-center text-label text-ink-secondary">
-              Forgot your password? Ask your dealership administrator to reset it.
+              Forgot your password? Ask your {branding.companyName} administrator to reset it.
             </p>
           </form>
         </div>

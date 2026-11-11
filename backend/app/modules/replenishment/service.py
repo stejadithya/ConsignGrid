@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.messages import KIND_REJECTION
 from app.core.numbering import next_number
 from app.core.permissions import P, Role, role_has
@@ -175,7 +176,7 @@ def _create(
     notes: str | None = None, auto_allocate: bool | None = None,
 ) -> ReplenishmentRequest:
     if location.type != LocationType.CONSIGNMENT:
-        raise BusinessRuleError("Replenishment can only be raised for a dealer consignment location")
+        raise BusinessRuleError(f"Replenishment can only be raised for {vocab.aPartner} consignment location")
     if qty <= 0:
         raise BusinessRuleError("Replenishment quantity must be positive")
     held_before = db.execute(select(InventoryEntry.id).where(
@@ -237,10 +238,10 @@ def create_manual(db: Session, actor: User, *, location_id: int, product_id: int
                   approver_note: str | None = None) -> ReplenishmentRequest:
     location = db.get(Location, location_id)
     if location is None or location.type != LocationType.CONSIGNMENT:
-        raise BusinessRuleError("Choose a dealer consignment location")
+        raise BusinessRuleError(f"Choose {vocab.aPartner} consignment location")
     ensure_reseller_access(actor, location.reseller_id, "Location")   # reseller users: own locations only
     if actor.is_reseller_user and priority == Priority.URGENT:
-        raise BusinessRuleError("Urgent priority is set by dealership staff; request High priority instead")
+        raise BusinessRuleError(f"Urgent priority is set by {get_settings().company_name} staff; request High priority instead")
     _require_active_reseller(db, location)
     product = db.get(Product, product_id)
     if product is None or not product.is_active:
@@ -300,7 +301,7 @@ def generate_shortfalls(db: Session, actor: User, *, reseller_id: int | None = N
 def _require_active_reseller(db: Session, location: Location) -> None:
     reseller = db.get(Reseller, location.reseller_id)
     if reseller is None or reseller.status != ResellerStatus.ACTIVE:
-        raise BusinessRuleError(f"Dealer account is {reseller.status if reseller else 'missing'}")
+        raise BusinessRuleError(f"{vocab.Partner} account is {reseller.status if reseller else 'missing'}")
 
 
 # ---------------------------------------------------------------------------
@@ -665,7 +666,7 @@ def reject(db: Session, actor: User, request_id: int, reason: str) -> Replenishm
                  entity_id=req.id, reseller_id=req.reseller_id, summary=f"Rejected {qty} on {req.number}: {reason}")
     kind_audience = {req.created_by_user_id, *reseller_users(db, req.reseller_id)}
     supplied = req.qty_allocated + req.qty_in_transit + req.qty_delivered
-    body = KIND_REJECTION + (f" {supplied} tyre(s) of this request are being supplied." if supplied else "")
+    body = KIND_REJECTION + (f" {supplied} {vocab.item}(s) of this request are being supplied." if supplied else "")
     _notify(db, kind_audience, f"Update on your request {req.number}", body, req, exclude=actor.id)
     _notify(db, [u for u in _requester_audience(db, req) if u not in kind_audience],
             f"{req.number} rejected", f"{qty} not supplied: {reason}", req, exclude=actor.id)
@@ -738,7 +739,7 @@ def dispatch(db: Session, actor: User, *, to_location_id: int, lines: list[tuple
     """
     to_loc = db.get(Location, to_location_id)
     if to_loc is None or to_loc.type != LocationType.CONSIGNMENT:
-        raise BusinessRuleError("Destination must be a dealer consignment location")
+        raise BusinessRuleError(f"Destination must be {vocab.aPartner} consignment location")
     _require_active_reseller(db, to_loc)
     if not lines:
         raise BusinessRuleError("Nothing to dispatch")
@@ -819,7 +820,7 @@ def _shipping(db: Session, method: str, carried_by_user_id: int | None, carrier:
         raise BusinessRuleError("Shipping method must be COURIER or SALES_REP")
     rep = db.get(User, carried_by_user_id) if carried_by_user_id else None
     if rep is None or not rep.is_active or rep.role != Role.SALES_REP:
-        raise BusinessRuleError("Choose the sales representative who will carry the tyres")
+        raise BusinessRuleError(f"Choose the sales representative who will carry the {vocab.items}")
     return f"Sales representative: {rep.full_name}"
 
 

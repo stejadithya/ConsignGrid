@@ -10,6 +10,7 @@ import { Alert, Badge, Button, ConfirmDialog, DataTable, Field, Input, Modal, Se
 import { ShopLabel, TyreLabel } from "./pickers";
 import { blankReceipt, canConfirmCarried, ReceiptFields, receiptBody, receiptReady, ReceiptView, type Receipt } from "./ReceiptProof";
 import { DeliveryNoteActions } from "./Shipping";
+import { vocab } from "@/lib/terms";
 
 /** Receive a delivery (with optional short quantities) and resolve discrepancies. */
 export function DeliveryActions({ delivery, onChanged }: { delivery: Delivery; onChanged: () => void }) {
@@ -37,7 +38,7 @@ export function DeliveryActions({ delivery, onChanged }: { delivery: Delivery; o
       <DeliveryNoteActions delivery={delivery} onChanged={onChanged} />
       {delivery.status === "IN_TRANSIT" && mayConfirm && <Button size="sm" variant="primary" onClick={() => { setReceiving(true); setQty({}); setReceipt(blankReceipt()); action.setError(null); }}>Confirm receipt</Button>}
       {delivery.status === "IN_TRANSIT" && !mayConfirm && can("delivery.confirm") && delivery.carried_by &&
-        <span className="text-caption text-ink-muted">To be confirmed by the dealer or {delivery.carried_by}</span>}
+        <span className="text-caption text-ink-muted">To be confirmed by the {vocab.partner} or {delivery.carried_by}</span>}
       {delivery.status === "RECEIVED_WITH_DISCREPANCY" && can("replenishment.manage") && delivery.lines.filter((l) => l.qty_open > 0).map((l) => (
         <Button key={l.id} size="sm" variant="danger" onClick={() => { setResolve(l); setRq(String(l.qty_open)); action.setError(null); }}>Resolve {l.sku} ({l.qty_open})</Button>
       ))}
@@ -45,8 +46,8 @@ export function DeliveryActions({ delivery, onChanged }: { delivery: Delivery; o
         footer={<><Button onClick={() => setReceiving(false)}>Cancel</Button><Button variant="primary" disabled={action.busy || !receiptReady(receipt, user)} onClick={receive}>{action.busy ? "Saving…" : "Confirm receipt"}</Button></>}>
         <Alert>{action.error}</Alert>
         <p className="text-body text-ink-secondary">Delivered to <b>{delivery.reseller_name}</b> (<ShopLabel inline code={delivery.to_location_code} withDealer={false} />). Enter what actually arrived; any shortfall stays visible in transit until resolved.</p>
-        <DataTable mobile="cards" density="comfortable" label="Tyres received" search={false} rows={delivery.lines} rowKey={(l) => l.id} columns={[
-          { key: "s", mobile: "primary", header: "Tyre", className: "min-w-48 whitespace-normal", cell: (l) => <TyreLabel sku={l.sku} productId={l.product_id} /> },
+        <DataTable mobile="cards" density="comfortable" label={`${vocab.Items} received`} search={false} rows={delivery.lines} rowKey={(l) => l.id} columns={[
+          { key: "s", mobile: "primary", header: vocab.Item, className: "min-w-48 whitespace-normal", cell: (l) => <TyreLabel sku={l.sku} productId={l.product_id} /> },
           { key: "r", mobile: "secondary", header: "Request", cell: (l) => l.request_number },
           { key: "d", mobile: "field", mobileOrder: 1, header: "Dispatched", align: "right", cell: (l) => l.qty_dispatched },
           { key: "q", mobile: "field", mobileOrder: 2, header: "Received", cell: (l) => <Input className="w-20" type="number" min={0} max={l.qty_dispatched} aria-label={`Received ${l.sku}`} value={qty[l.id] ?? String(l.qty_dispatched)} onChange={(e) => setQty((x) => ({ ...x, [l.id]: e.target.value }))} /> },
@@ -58,7 +59,7 @@ export function DeliveryActions({ delivery, onChanged }: { delivery: Delivery; o
         onConfirm={async (reason) => { if (await action.run(() => api.post(`/replenishment/deliveries/${delivery.id}/resolve`, { line_id: resolve!.id, outcome, quantity: Number(rq), reason }))) { setResolve(null); onChanged(); } }}>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Outcome">{(id) => <Select id={id} value={outcome} onChange={(e) => setOutcome(e.target.value)} options={[
-            { value: "RETURN_TO_WAREHOUSE", label: "Returned to warehouse" }, { value: "LATE_DELIVERY", label: "Arrived late at dealer" },
+            { value: "RETURN_TO_WAREHOUSE", label: "Returned to warehouse" }, { value: "LATE_DELIVERY", label: `Arrived late at ${vocab.partner}` },
             { value: "LOST", label: "Lost / write off (needs adjust permission)" }]} />}</Field>
           <Field label={`Quantity (max ${resolve?.qty_open})`}>{(id) => <Input id={id} type="number" min={1} value={rq} onChange={(e) => setRq(e.target.value)} />}</Field>
         </div>

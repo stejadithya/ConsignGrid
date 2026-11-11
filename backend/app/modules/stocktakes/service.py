@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.numbering import next_number
 from app.core.permissions import P, Role, role_has
 from app.modules.audit.service import record_audit
@@ -31,7 +32,9 @@ from app.modules.sales import service as sales
 from app.modules.sales.models import SaleSource
 from app.modules.stocktakes.models import Stocktake, StocktakeLine, StocktakeStatus
 
-NOT_FOUND_RULE = "In consignment, tyres that aren't found are re-checked or invoiced."
+
+def not_found_rule() -> str:
+    return f"In consignment, {vocab.items} that aren't found are re-checked or invoiced."
 
 
 @dataclass
@@ -70,7 +73,7 @@ def create(db: Session, actor: User, *, location_id: int, count_date: date, coun
            notes: str | None = None) -> Stocktake:
     loc = db.get(Location, location_id)
     if loc is None or loc.type != LocationType.CONSIGNMENT:
-        raise BusinessRuleError("Stocktakes are for dealer consignment locations")
+        raise BusinessRuleError(f"Stocktakes are for {vocab.partner} consignment locations")
     if count_date > date.today():
         raise BusinessRuleError("Count date cannot be in the future")
     _validate_counts(counts)
@@ -139,7 +142,7 @@ def submit(db: Session, actor: User, stocktake_id: int) -> Stocktake:
         return st
     # Hold the shortage so it cannot be sold or transferred while the reseller decides.
     hold = Ledger(db, TxnType.STOCKTAKE_ADJUSTMENT, actor_id=actor.id, ref=Ref("stocktake", st.id, st.number),
-                  reason=f"Held pending dealer confirmation of stock check {st.number}")
+                  reason=f"Held pending {vocab.partner} confirmation of stock check {st.number}")
     for ln in short:
         bal = lock_balances(db, [(loc.id, ln.product_id)])[(loc.id, ln.product_id)]
         ln.qty_held = max(0, min(ln.shortage, bal.available))
@@ -152,7 +155,7 @@ def submit(db: Session, actor: User, stocktake_id: int) -> Stocktake:
     units = sum(ln.shortage for ln in short)
     reseller = db.get(Reseller, st.reseller_id)
     notify_users(db, [*reseller_users(db, st.reseller_id), reseller.sales_rep_user_id],
-                 f"Stock check {st.number}: {units} tyre(s) not found",
+                 f"Stock check {st.number}: {units} {vocab.item}(s) not found",
                  find_window_text(units, days, st.confirm_due_at) + f" ({reseller.business_name}, {loc.name})",
                  link=_link(st), entity_type="stocktake", entity_id=st.id, exclude=actor.id)
     return st
@@ -160,7 +163,7 @@ def submit(db: Session, actor: User, stocktake_id: int) -> Stocktake:
 
 def find_window_text(units: int, days: int, due: datetime) -> str:
     """What the dealer is told when tyres are not found at a stock check (D3)."""
-    return (f"{units} tyre(s) weren't found at today's stock check. You have {days} days to find them. If you find "
+    return (f"{units} {vocab.item}(s) weren't found at today's stock check. You have {days} days to find them. If you find "
             f"them, ask for a re-check. If not, they'll be invoiced as sold on {due:%d %b %Y}.")
 
 
@@ -269,7 +272,7 @@ def confirm(db: Session, actor: User | None, stocktake_id: int, decisions: list[
     if actor is not None:
         ensure_reseller_access(actor, st.reseller_id, "Stocktake")
     if st.status not in RESOLVABLE:
-        raise ConflictError(f"{st.number} is {st.status}; only stock checks awaiting the dealer can be confirmed")
+        raise ConflictError(f"{st.number} is {st.status}; only stock checks awaiting the {vocab.partner} can be confirmed")
     if actor is None:
         pass   # automatic invoicing; the reason is set by the caller
     elif actor.is_reseller_user:
@@ -277,14 +280,14 @@ def confirm(db: Session, actor: User | None, stocktake_id: int, decisions: list[
             raise PermissionDeniedError("Missing permission: stocktake.confirm")
     else:
         if not role_has(actor.role, P.STOCKTAKE_APPROVE):
-            raise PermissionDeniedError("Only the dealer, or a Relationship / Warehouse Manager on their behalf, "
+            raise PermissionDeniedError(f"Only the {vocab.partner}, or a Relationship / Warehouse Manager on their behalf, "
                                         "can confirm a stock check")
         if not on_behalf_reason or len(on_behalf_reason.strip()) < 3:
-            raise BusinessRuleError("Give the reason for confirming on the dealer's behalf")
+            raise BusinessRuleError(f"Give the reason for confirming on the {vocab.partner}'s behalf")
     if any(d.qty_missing > 0 for d in decisions):
         # Release 1.11 (finding 28): nothing is written off as "missing" from a dealer's stock check. The legacy
         # SUBMITTED → classify/approve path for counts from before P-018 is unchanged.
-        raise BusinessRuleError(NOT_FOUND_RULE)
+        raise BusinessRuleError(not_found_rule())
     given = {d.line_id: d for d in decisions}
     short = {ln.id: ln for ln in st.lines if ln.shortage}
     if set(given) - set(short):
@@ -313,7 +316,7 @@ def confirm(db: Session, actor: User | None, stocktake_id: int, decisions: list[
         db.refresh(sale)
         invoice = invoicing.create_invoice(db, actor, reseller_id=st.reseller_id,
                                            sale_line_ids=[ln.id for ln in sale.lines],
-                                           notes=f"Tyres invoiced as sold at stock check {st.number}")
+                                           notes=f"{vocab.Items} invoiced as sold at stock check {st.number}")
         st.invoice_id = invoice.id
     _finish(st, actor)
     if actor is None or not actor.is_reseller_user:
@@ -323,7 +326,7 @@ def confirm(db: Session, actor: User | None, stocktake_id: int, decisions: list[
     db.flush()
     sold = sum(ln.qty_sold for ln in st.lines)
     who = (f"{get_settings().app_display_name} automatically" if actor is None else
-           "the dealer" if actor.is_reseller_user else f"{actor.full_name} on the dealer's behalf")
+           f"the {vocab.partner}" if actor.is_reseller_user else f"{actor.full_name} on the {vocab.partner}'s behalf")
     record_audit(db, actor_id=actor_id, action="stocktake.confirm", entity_type="stocktake", entity_id=st.id,
                  reseller_id=st.reseller_id,
                  summary=(f"{st.confirmed_on_behalf_reason}: {st.number}" if actor is None else
@@ -335,15 +338,15 @@ def confirm(db: Session, actor: User | None, stocktake_id: int, decisions: list[
     if actor is None:
         notify_users(db, [*reseller_users(db, st.reseller_id), reseller.sales_rep_user_id,
                           *staff_in_roles(db, Role.RELATIONSHIP_MANAGER)],
-                     f"Stock check {st.number}: tyres invoiced",
-                     f"{st.confirmed_on_behalf_reason}. {sold} tyre(s) for {reseller.business_name} were invoiced as "
+                     f"Stock check {st.number}: {vocab.items} invoiced",
+                     f"{st.confirmed_on_behalf_reason}. {sold} {vocab.item}(s) for {reseller.business_name} were invoiced as "
                      "sold" + (f" (invoice record {invoice.number})" if invoice else "") + "; replacements were raised.",
                      link=_link(st), entity_type="stocktake", entity_id=st.id)
     else:
         notify_users(db, [st.counted_by_user_id, reseller.sales_rep_user_id,
                           *staff_in_roles(db, Role.RELATIONSHIP_MANAGER, Role.WAREHOUSE_MANAGER)],
                      f"Stock check {st.number} confirmed",
-                     f"{reseller.business_name}: {sold} tyre(s) invoiced as sold"
+                     f"{reseller.business_name}: {sold} {vocab.item}(s) invoiced as sold"
                      + (f" (invoice record {invoice.number})" if invoice else "") + f" — confirmed by {who}.",
                      link=_link(st), entity_type="stocktake", entity_id=st.id, exclude=actor_id)
     return st
@@ -391,7 +394,7 @@ def request_recheck(db: Session, actor: User, stocktake_id: int, note: str | Non
                  reseller_id=st.reseller_id, summary=f"{reseller.business_name} asked for a re-check of {st.number}{tail}")
     notify_users(db, [reseller.sales_rep_user_id, *staff_in_roles(db, Role.WAREHOUSE_MANAGER)],
                  f"Re-check requested: {st.number}",
-                 f"{reseller.business_name} found the tyres and asked for a re-count{tail}", link=_link(st),
+                 f"{reseller.business_name} found the {vocab.items} and asked for a re-count{tail}", link=_link(st),
                  entity_type="stocktake", entity_id=st.id, exclude=actor.id)
     return st
 
@@ -415,9 +418,9 @@ def _dealer_action(db: Session, actor: User, stocktake_id: int) -> Stocktake:
     st = _get(db, stocktake_id, lock=True)
     ensure_reseller_access(actor, st.reseller_id, "Stocktake")
     if not actor.is_reseller_user or not role_has(actor.role, P.STOCKTAKE_CONFIRM):
-        raise PermissionDeniedError("Only the dealer can do this")
+        raise PermissionDeniedError(f"Only the {vocab.partner} can do this")
     if st.status != StocktakeStatus.AWAITING_RESELLER:
-        raise ConflictError(f"{st.number} is {st.status}; only stock checks waiting for the dealer")
+        raise ConflictError(f"{st.number} is {st.status}; only stock checks waiting for the {vocab.partner}")
     return st
 
 
@@ -425,7 +428,7 @@ def start_recount(db: Session, actor: User, stocktake_id: int) -> Stocktake:
     """Release the hold, mark the check SUPERSEDED and start a new draft for the same shop with the shortage SKUs."""
     old = _get(db, stocktake_id, lock=True)
     if old.status not in RESOLVABLE:
-        raise ConflictError(f"{old.number} is {old.status}; a re-count starts from a check waiting for the dealer")
+        raise ConflictError(f"{old.number} is {old.status}; a re-count starts from a check waiting for the {vocab.partner}")
     loc = db.get(Location, old.location_id)
     held = [ln for ln in old.lines if ln.qty_held]
     if held:
@@ -448,7 +451,7 @@ def start_recount(db: Session, actor: User, stocktake_id: int) -> Stocktake:
     record_audit(db, actor_id=actor.id, action="stocktake.recount", entity_type="stocktake", entity_id=old.id,
                  reseller_id=old.reseller_id, summary=f"{old.number} superseded by re-count {new.number}")
     notify_users(db, [*reseller_users(db, old.reseller_id), db.get(Reseller, old.reseller_id).sales_rep_user_id],
-                 f"Re-count started: {new.number}", f"{old.number} is being re-counted by {actor.full_name}; the tyres "
+                 f"Re-count started: {new.number}", f"{old.number} is being re-counted by {actor.full_name}; the {vocab.items} "
                  "it held are free again.", link=_link(new), entity_type="stocktake", entity_id=new.id,
                  exclude=actor.id)
     return new
@@ -494,7 +497,7 @@ def send_due_reminders(db: Session, now: datetime | None = None) -> int:
         loc = db.get(Location, st.location_id)
         units = sum(ln.shortage for ln in st.lines)
         notify_users(db, [*reseller_users(db, st.reseller_id), st.counted_by_user_id, reseller.sales_rep_user_id],
-                     f"Reminder: {units} tyre(s) not found at stock check {st.number}",
+                     f"Reminder: {units} {vocab.item}(s) not found at stock check {st.number}",
                      f"{reseller.business_name} ({loc.name}): find them and ask for a re-check, or they'll be invoiced "
                      f"as sold on {st.confirm_due_at:%d %b %Y}.",
                      link=_link(st), entity_type="stocktake", entity_id=st.id)

@@ -8,6 +8,7 @@ import { useAction } from "@/lib/hooks";
 import type { Delivery, Transfer, UserOut } from "@/lib/types";
 import { useReference } from "./pickers";
 import { Button, Field, Input, Select } from "./ui";
+import { vocab } from "@/lib/terms";
 
 export interface Shipping { method: "COURIER" | "SALES_REP"; carrier: string; repId: number | "" }
 
@@ -36,7 +37,7 @@ export function ShippingMethodFields({ value, onChange, carrierLabel = "Carrier"
       </fieldset>
       {value.method === "COURIER"
         ? <Field label={carrierLabel} required={carrierRequired}>{(id) => <Input id={id} value={value.carrier} onChange={(e) => onChange({ ...value, carrier: e.target.value })} placeholder="e.g. StarTrack" />}</Field>
-        : <Field label="Sales representative" required hint="They are notified and confirm the delivery when they hand the tyres over.">
+        : <Field label="Sales representative" required hint={`They are notified and confirm the delivery when they hand the ${vocab.items} over.`}>
             {(id) => <Select id={id} value={value.repId} onChange={(e) => onChange({ ...value, repId: e.target.value ? Number(e.target.value) : "" })}
               placeholder={loaded ? "Select sales representative…" : "Loading…"} options={reps.map((u) => ({ value: u.id, label: u.full_name }))} />}
           </Field>}
@@ -75,7 +76,7 @@ function NoteActions({ received, pdfUrl, emailPath, canEmail, emailedAt, emailTo
       </a>
       {canEmail && <Button size="sm" variant="ghost" disabled={action.busy}
         onClick={async () => { if (await action.run(() => api.post(emailPath))) onChanged?.(); }}>
-        <Mail aria-hidden />{emailedAt ? "Resend email" : "Email to dealer"}</Button>}
+        <Mail aria-hidden />{emailedAt ? "Resend email" : `Email to ${vocab.partner}`}</Button>}
       <span className="text-ink-muted">
         {emailedAt ? `Emailed to ${emailTo} on ${fmtDateTime(emailedAt)}` : emailError ?? ""}
       </span>

@@ -18,6 +18,8 @@ import { useAuth } from "@/lib/auth";
 import { fmtDate, humanize, todayIso } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Proposal } from "@/lib/types";
+import { vocab } from "@/lib/terms";
+import { branding } from "@/config/branding";
 
 interface BackorderRow {
   request_id: number; number: string; reseller_id: number; reseller_name: string; location_id: number; location_code: string; product_id: number; sku: string;
@@ -76,7 +78,7 @@ function Outstanding() {
   return (
     <>
       <Alert>{error}</Alert>
-      {product && <FilteredTo label={`Demand for ${tyreName({ productId: product }) ?? "this tyre"}`} clearHref="/backorders" />}
+      {product && <FilteredTo label={`Demand for ${tyreName({ productId: product }) ?? `this ${vocab.item}`}`} clearHref="/backorders" />}
       {data && (
         <MetricStrip items={[
           { label: "Total backorders", value: data.totals.requests, hint: Object.entries(data.by_reason).map(([k, v]) => `${humanize(k)} ${v}`).join(" · ") || "No open demand" },
@@ -102,7 +104,7 @@ function Outstanding() {
           filterCount={[reseller, reason, awaiting !== "true"].filter(Boolean).length}
           onClearFilters={() => { setReseller(""); setReason(""); setAwaiting("true"); }}
           filters={<>
-            {!user?.reseller_id && <FilterField label="Dealer" className="w-56"><ResellerSelect value={reseller} onChange={setReseller} /></FilterField>}
+            {!user?.reseller_id && <FilterField label={vocab.Partner} className="w-56"><ResellerSelect value={reseller} onChange={setReseller} /></FilterField>}
             <FilterField label="Reason" className="w-40"><Select aria-label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="All reasons"
               options={["SALE", "TRANSFER", "TARGET_SHORTFALL", "MANUAL"].map((x) => ({ value: x, label: humanize(x) }))} /></FilterField>
             <FilterField label="Scope" className="w-52"><Select aria-label="Scope" value={awaiting} onChange={(e) => setAwaiting(e.target.value)}
@@ -110,7 +112,7 @@ function Outstanding() {
           </>}
           columns={[
             { key: "n", mobile: "primary", header: "Request", mobileSort: "Request number", value: (r) => r.number, cell: (r) => <Link className="link" href={`/replenishment/${r.request_id}`}>{r.number}</Link> },
-            { key: "r", mobile: "secondary", mobileOrder: 1, header: "Dealer", value: (r) => r.reseller_name, cell: (r) => <div className="min-w-0"><div className="truncate">{r.reseller_name}</div><div className="text-caption text-ink-muted">{r.location_code}</div></div> },
+            { key: "r", mobile: "secondary", mobileOrder: 1, header: vocab.Partner, value: (r) => r.reseller_name, cell: (r) => <div className="min-w-0"><div className="truncate">{r.reseller_name}</div><div className="text-caption text-ink-muted">{r.location_code}</div></div> },
             { key: "s", mobile: "secondary", mobileOrder: 2, header: "SKU", value: (r) => r.sku, cell: (r) => <span className="sku text-label whitespace-nowrap text-ink-secondary">{r.sku}</span> },
             { key: "why", header: "Source", value: (r) => r.reason, cell: (r) => (
               <div className="flex items-center gap-2">
@@ -169,9 +171,9 @@ function ManualRequest({ onClose, onDone }: { onClose: () => void; onDone: () =>
           ...(needsApproval ? { approver_note: approverNote.trim() || null } : {}) }))) onDone(); }}>Create request</Button></>}>
       <Alert>{action.error}</Alert>
       <Alert tone="info">{reseller
-        ? "Request stock you need beyond what is already on its way. Requests are limited to your agreed stock levels; the dealership confirms and dispatches."
+        ? `Request stock you need beyond what is already on its way. Requests are limited to your agreed stock levels; ${branding.companyName} confirms and dispatches.`
         : "Requests above the uncovered target shortfall need override permission, so demand is not duplicated."}</Alert>
-      <Field label={reseller ? "Location" : "Dealer location"} required>{(id) => <LocationSelect id={id} types={["CONSIGNMENT"]} value={location} onChange={setLocation} />}</Field>
+      <Field label={reseller ? "Location" : `${vocab.Partner} location`} required>{(id) => <LocationSelect id={id} types={["CONSIGNMENT"]} value={location} onChange={setLocation} />}</Field>
       <Field label="Product" required>{(id) => <ProductSelect id={id} value={product} onChange={setProduct} />}</Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Quantity">{(id) => <Input id={id} type="number" min={1} value={qty} onChange={(e) => setQty(e.target.value)} />}</Field>
@@ -208,8 +210,8 @@ function AllocationProposal() {
       <DataTable mobile="cards" label="Proposed allocations" search={false} rows={data} rowKey={(p) => p.request_id} empty="No available warehouse stock matches open backorders."
         columns={[
           { key: "n", mobile: "primary", header: "Request", cell: (p) => <Link className="link" href={`/replenishment/${p.request_id}`}>{p.request_number}</Link> },
-          { key: "r", mobile: "secondary", mobileOrder: 1, header: "Dealer", cell: (p) => <>{p.reseller_name}<div className="text-caption text-ink-muted">{p.location_code}</div></> },
-          { key: "s", mobile: "secondary", mobileOrder: 2, header: "Tyre", className: "min-w-48 whitespace-normal", cell: (p) => <TyreLabel sku={p.sku} productId={p.product_id} /> },
+          { key: "r", mobile: "secondary", mobileOrder: 1, header: vocab.Partner, cell: (p) => <>{p.reseller_name}<div className="text-caption text-ink-muted">{p.location_code}</div></> },
+          { key: "s", mobile: "secondary", mobileOrder: 2, header: vocab.Item, className: "min-w-48 whitespace-normal", cell: (p) => <TyreLabel sku={p.sku} productId={p.product_id} /> },
           { key: "p", mobile: "status", header: "Priority", cell: (p) => <Badge value={p.priority} /> },
           { key: "c", header: "Raised", cell: (p) => fmtDate(p.created_at) },
           { key: "a", mobile: "field", mobileOrder: 3, header: "Awaiting", align: "right", cell: (p) => p.awaiting_supply },

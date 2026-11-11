@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth";
 import { todayIso } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Delivery, PickRow, ReplenishmentRequest } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 export default function ReplenishmentPage() {
   const { can } = useAuth();
@@ -28,7 +29,7 @@ export default function ReplenishmentPage() {
   const [tab, setTab] = useState(initial === "deliveries" || initial === "requests" ? initial : canDispatch ? "dispatch" : "requests");
   return (
     <>
-      <PageHeader title="Replenishment" subtitle="Restore dealer stock from the warehouse. Replenishment moves stock only — it never creates an invoice."
+      <PageHeader title="Replenishment" subtitle={`Restore ${vocab.partner} stock from the warehouse. Replenishment moves stock only — it never creates an invoice.`}
         actions={can("transfer.request") && <CheckStockButton />} />
       <Tabs active={tab} onChange={setTab} tabs={[
         ...(canDispatch ? [{ id: "dispatch", label: "Pick & dispatch" }] : []),
@@ -157,7 +158,7 @@ function RequestsTab() {
           onClearFilters={() => { setStatus("open"); setReseller(""); }}
           filters={<>
             <FilterField label="Status" className="w-40"><Select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: "open", label: "Open" }, { value: "all", label: "All (incl. closed)" }]} /></FilterField>
-            <FilterField label="Dealer" className="w-64"><ResellerSelect value={reseller} onChange={setReseller} /></FilterField>
+            <FilterField label={vocab.Partner} className="w-64"><ResellerSelect value={reseller} onChange={setReseller} /></FilterField>
           </>} />
       </Card>
     </>
@@ -169,7 +170,7 @@ function DeliveriesTab() {
   const [openOnly, setOpenOnly] = useState(q ? "false" : "true");
   const { data, reload } = useApi<Delivery[]>("/replenishment/deliveries", { open_only: openOnly === "true" });
   return (
-    <Card padded={false} title="Deliveries" subtitle="Warehouse dispatches to dealer locations"
+    <Card padded={false} title="Deliveries" subtitle={`Warehouse dispatches to ${vocab.partner} locations`}
       actions={<div className="w-64"><Select aria-label="Filter" value={openOnly} onChange={(e) => setOpenOnly(e.target.value)} options={[{ value: "true", label: "Open (in transit / discrepancy)" }, { value: "false", label: "All" }]} /></div>}>
       <DeliveriesTable rows={data} onChanged={reload} initialSearch={q} />
     </Card>

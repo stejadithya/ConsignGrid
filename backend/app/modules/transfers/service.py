@@ -11,6 +11,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.numbering import next_number
 from app.core.permissions import P, Role, role_has
 from app.modules.audit.service import record_audit
@@ -64,12 +65,12 @@ def get_transfer(db: Session, user: User, transfer_id: int) -> Transfer:
 def _consignment_location(db: Session, location_id: int, role: str) -> tuple[Location, Reseller]:
     loc = db.get(Location, location_id)
     if loc is None or loc.type != LocationType.CONSIGNMENT:
-        raise BusinessRuleError(f"The {role} must be a dealer consignment location")
+        raise BusinessRuleError(f"The {role} must be {vocab.aPartner} consignment location")
     if not loc.is_active:
         raise BusinessRuleError(f"{loc.code} is inactive")
     reseller = db.get(Reseller, loc.reseller_id)
     if reseller.status != ResellerStatus.ACTIVE:
-        raise BusinessRuleError(f"The {role} dealer {reseller.account_ref} is {reseller.status}")
+        raise BusinessRuleError(f"The {role} {vocab.partner} {reseller.account_ref} is {reseller.status}")
     return loc, reseller
 
 
@@ -141,7 +142,7 @@ def find_sources(db: Session, product_id: int, *, exclude_location_id: int | Non
         consent = _consent(db, reseller.id)
         reason = None
         if reseller.status != ResellerStatus.ACTIVE:
-            reason = f"Dealer is {reseller.status}"
+            reason = f"{vocab.Partner} is {reseller.status}"
         elif not loc.is_active:
             reason = "Location inactive"
         elif consent == TransferConsent.NOT_ALLOWED:
@@ -257,7 +258,7 @@ def warehouse_receive(db: Session, actor: User, transfer_id: int, *, notes: str 
     destination dealer. No stock moves (they stay in transit); the carrying Sales Rep is told to deliver."""
     t = lock_transfer(db, transfer_id)
     if not via_warehouse(t):
-        raise BusinessRuleError(f"{t.number} goes direct to the dealer, not via the warehouse")
+        raise BusinessRuleError(f"{t.number} goes direct to the {vocab.partner}, not via the warehouse")
     if t.status != TransferStatus.IN_TRANSIT:
         raise ConflictError(f"{t.number} is {t.status}; the warehouse checks it after collection")
     if t.warehouse_received_at is not None:
@@ -306,7 +307,7 @@ def arrange_shipping(db: Session, actor: User, transfer_id: int, *, shipping_met
         product = db.get(Product, t.product_id)
         notify_users(db, [t.carried_by_user_id], f"Please collect {t.number} ({t.quantity} × {product.tyre_label})",
                      f"Collect from {_where(db, t.source_location_id)}, "
-                     + ("bring the tyres to the warehouse to be checked, then deliver to " if via_warehouse(t)
+                     + (f"bring the {vocab.items} to the warehouse to be checked, then deliver to " if via_warehouse(t)
                         else "and deliver to ")
                      + f"{_where(db, t.destination_location_id)}.", link=link(t), entity_type="transfer",
                      entity_id=t.id, exclude=actor.id)
@@ -365,7 +366,7 @@ def collect(db: Session, actor: User, transfer_id: int, *, quantity: int | None 
             raise PermissionDeniedError(f"{rep.full_name if rep else 'The sales representative'} is collecting "
                                         f"{t.number}: only they can record the collection")
         if not collected_from_name or len(collected_from_name) < 2:
-            raise BusinessRuleError("Enter the name of the person at the dealer who handed the tyres over")
+            raise BusinessRuleError(f"Enter the name of the person at the {vocab.partner} who handed the {vocab.items} over")
     qty = t.quantity if quantity is None else quantity
     if qty <= 0 or qty > t.quantity:
         raise BusinessRuleError(f"Collected quantity must be 1–{t.quantity}")
@@ -397,7 +398,7 @@ def collect(db: Session, actor: User, transfer_id: int, *, quantity: int | None 
     if _find_for_me(db, t):
         _arranged(db, t, "COLLECTED", actor.id)   # tells the dealer itself ("Good news … on its way")
     else:
-        notify_users(db, reseller_users(db, t.destination_reseller_id), "Tyres are on their way to you",
+        notify_users(db, reseller_users(db, t.destination_reseller_id), f"{vocab.Items} are on their way to you",
                      f"{qty} × {product.tyre_label} ({t.number})", link=link(t), entity_type="transfer",
                      entity_id=t.id, exclude=actor.id)
     notify_users(db, reseller_users(db, t.source_reseller_id),
@@ -435,7 +436,7 @@ def receive(db: Session, actor: User, transfer_id: int, *, quantity: int | None 
         raise ConflictError(f"{t.number} is {t.status}")
     if via_warehouse(t) and t.warehouse_received_at is None:
         raise ConflictError(f"{t.number} goes via the warehouse: the warehouse records that it received and checked "
-                            "the tyres before they are delivered", code="awaiting_warehouse_check")
+                            f"the {vocab.items} before they are delivered", code="awaiting_warehouse_check")
     qty = t.qty_in_transit if quantity is None else quantity
     if qty < 0 or qty > t.qty_in_transit:
         raise BusinessRuleError(f"Received quantity must be 0–{t.qty_in_transit}")

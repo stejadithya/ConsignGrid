@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { accentStyle, branding } from "@/config/branding";
 import { AuthProvider } from "@/lib/auth";
+import { ConfigProvider } from "@/lib/config";
 
 // Inter (variable, 100–900), self-hosted: subset to Latin incl. Māori macrons and the symbols the app uses.
 // Licence: ./fonts/Inter-LICENSE.txt (SIL Open Font License 1.1).
@@ -22,7 +23,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={inter.variable} style={accentStyle() as React.CSSProperties}>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <ConfigProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ConfigProvider>
       </body>
     </html>
   );

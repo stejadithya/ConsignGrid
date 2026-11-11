@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError
+from app.core.industry import vocab
 from app.core.numbering import next_number
 from app.core.permissions import ROLE_LABELS, Role
 from app.modules.audit.service import record_audit
@@ -54,7 +55,7 @@ def record_sale(
         raise BusinessRuleError("Record sales from the warehouse with 'Non-consignment sale (from warehouse)'")
     location = db.get(Location, location_id)
     if location is None or location.type != LocationType.CONSIGNMENT:
-        raise BusinessRuleError("Sales are recorded against a dealer consignment location")
+        raise BusinessRuleError(f"Sales are recorded against {vocab.aPartner} consignment location")
     # Reseller users may only report sales for their own locations, at agreed prices (no manual overrides).
     # actor None: recorded by the system itself (a stock check invoiced automatically, release 1.11).
     if actor is not None:
@@ -63,12 +64,12 @@ def record_sale(
         # Besides reporting their own sales, a reseller confirms stock-check shortages as sold (P-018).
         allowed = {SaleSource.RESELLER_REPORT} | ({SaleSource.STOCKTAKE} if stocktake_id is not None else set())
         if source not in allowed:
-            raise BusinessRuleError("Dealer users report sales with source 'Reported by dealer'")
+            raise BusinessRuleError(f"{vocab.Partner} users report sales with source 'Reported by {vocab.partner}'")
         if any(ln.unit_price is not None for ln in lines):
-            raise BusinessRuleError("Dealer users cannot override the agreed price")
+            raise BusinessRuleError(f"{vocab.Partner} users cannot override the agreed price")
     reseller = db.get(Reseller, location.reseller_id)
     if reseller.status == ResellerStatus.CLOSED:
-        raise BusinessRuleError(f"Dealer {reseller.account_ref} is closed")
+        raise BusinessRuleError(f"{vocab.Partner} {reseller.account_ref} is closed")
     if sale_date > date.today():
         raise BusinessRuleError("Sale date cannot be in the future")
     if not lines:
@@ -138,7 +139,7 @@ def cash_account(db: Session) -> Reseller:
     if acct is None:
         acct = Reseller(account_ref=CASH_ACCOUNT_REF, business_name="Cash sales (walk-in)", status=ResellerStatus.ACTIVE,
                         is_cash_account=True, payment_terms_days=0,
-                        notes="System account for warehouse cash sales. Not a consignment dealer.")
+                        notes=f"System account for warehouse cash sales. Not a consignment {vocab.partner}.")
         db.add(acct)
         db.flush()
     return acct

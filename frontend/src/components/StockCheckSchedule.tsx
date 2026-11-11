@@ -7,6 +7,7 @@ import { fmtDate } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import { ShopLabel } from "./pickers";
 import { Alert, Badge, Button, ButtonLink, Card, DataTable, Field, Input, Modal, Textarea } from "./ui";
+import { vocab } from "@/lib/terms";
 
 /** One dealer shop's next stock check (GET /stocktakes/schedule). */
 export interface StockCheckRow {
@@ -42,9 +43,9 @@ export function StockCheckSchedule({ title = "Stock checks", resellerId, repId, 
       <Card padded={false} icon={CalendarClock} title={title}
         subtitle={data ? `${rows.filter((r) => r.status === "OVERDUE").length} overdue · ${rows.filter((r) => r.status === "DUE").length} due today · every 30 days` : undefined}>
         <DataTable mobile="cards" label={title} search={rows.length > 10} rows={data ? rows : undefined} rowKey={(r) => r.location_id}
-          empty="No stock checks due" emptyHint="Each dealer shop is due a stock check 30 days after its last one."
+          empty="No stock checks due" emptyHint={`Each ${vocab.partner} ${vocab.site} is due a stock check 30 days after its last one.`}
           columns={[
-            { key: "d", mobile: "primary", header: "Dealer", value: (r) => r.reseller_name,
+            { key: "d", mobile: "primary", header: vocab.Partner, value: (r) => r.reseller_name,
               cell: (r) => <ShopLabel locationId={r.location_id} code={r.location_code} dealer={resellerId ? null : r.reseller_name} withDealer={!resellerId} /> },
             { key: "s", mobile: "status", header: "Status", cell: (r) => <Badge value={STATUS[r.status].value} label={r.status === "OVERDUE" ? `Overdue ${r.days_overdue}d` : STATUS[r.status].label} /> },
             { key: "due", mobile: "field", mobileOrder: 1, header: "Due", value: (r) => r.due_on, cell: (r) => (

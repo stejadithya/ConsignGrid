@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.permissions import P
 from app.modules.customers import (
     agreement_files,
@@ -169,7 +170,7 @@ def get_reseller(reseller_id: int, db: DB, user: CurrentUser):
 @router.post("/resellers", response_model=ResellerOut, status_code=201)
 def create_reseller(data: ResellerCreate, db: DB, user: Annotated[User, Depends(require(P.RESELLER_WRITE))]):
     if data.create_login and not has(user, P.USER_MANAGE):
-        raise PermissionDeniedError("Missing permission: user.manage (needed to create the dealer's login)")
+        raise PermissionDeniedError(f"Missing permission: user.manage (needed to create the {vocab.partner}'s login)")
     r, login = service.create_reseller(db, user, data)
     db.commit()
     out = service.reseller_out(db, service.get_reseller(db, user, r.id))
@@ -217,7 +218,7 @@ def add_location(
 def _initial_stock_allowed(reseller) -> None:
     """Initial stock is only for a dealer who already held the supplier's stock when added (UAT round 2)."""
     if reseller.joined_with_stock is False:
-        raise BusinessRuleError(f"{reseller.business_name} was added as a new dealer, so their stock comes from the "
+        raise BusinessRuleError(f"{reseller.business_name} was added as a new {vocab.partner}, so their stock comes from the "
                                 "warehouse: create a stock request, which goes for approval and delivery.")
 
 
@@ -228,8 +229,8 @@ def add_initial_stock(reseller_id: int, data: OpeningBalanceIn, db: DB,
     _initial_stock_allowed(service.get_reseller(db, user, reseller_id))
     loc = db.get(Location, data.location_id)
     if loc is None or loc.type != LocationType.CONSIGNMENT or loc.reseller_id != reseller_id:
-        raise BusinessRuleError("Choose one of this dealer's consignment locations")
-    txn = post_opening_balance(db, user, data, reason="Initial stock (backorder): held by the dealer when added")
+        raise BusinessRuleError(f"Choose one of this {vocab.partner}'s consignment locations")
+    txn = post_opening_balance(db, user, data, reason=f"Initial stock (backorder): held by the {vocab.partner} when added")
     db.commit()
     return {"transaction_number": txn.number, "units": sum(ln.quantity for ln in data.lines)}
 

@@ -51,9 +51,39 @@ Never use the accent for statuses (green/amber/red keep their operational meanin
 `backend/tests/test_brand_pack.py` fails the build if the previous customer's brand appears anywhere in the
 product's code, assets or file names. Add a new line to that test if a future customer leaves.
 
-## 2. Industry Pack — planned (Phase 1.2–1.4)
-Choose `tyres` (default), `generic`, `auto_parts`, `medical`, `industrial`, … Sets the words (Dealer / shop / tyre),
-item attributes, label format, import template and default rules.
+## 2. Industry Pack — words available now (Phase 1.2); attributes next (Phase 1.4)
+
+Set `INDUSTRY_PACK` in `backend/.env`. The words reach every screen (loaded from `GET /api/config/public` when the
+app starts — no frontend rebuild needed), notifications, emails, delivery notes, Excel exports and error messages.
+
+| Pack | Item | Partner | Site |
+|---|---|---|---|
+| `tyres` (default) | tyre | dealer | shop |
+| `generic` | item | partner | site |
+| `auto_parts` | part | workshop | branch |
+| `medical` | device | hospital | location |
+| `industrial` | part | customer | store |
+| `agri` | product | merchant | store |
+| `fmcg` | product | retailer | store |
+| `building` | product | stockist | showroom |
+| `furniture` | piece | retailer | showroom |
+
+A customer that uses its own word for one thing: `TERMS_OVERRIDES={"partner": "stockist", "partners": "stockists"}`.
+
+Same build, `INDUSTRY_PACK=medical` plus a Brand Pack:
+
+| Dashboard | Partner list |
+|---|---|
+| ![medical dashboard](img/pack-medical-dashboard.png) | ![medical partners](img/pack-medical-partners.png) |
+
+**For developers:** never write "tyre", "dealer" or "shop" in user-facing text. Backend:
+`from app.core.industry import vocab` → `f"{vocab.Items} sold by {vocab.aPartner}"`. Frontend:
+`import { vocab } from "@/lib/terms"` → `` `${vocab.Items} sold by ${vocab.aPartner}` `` inside a component or
+function (module-level constants must use a getter, e.g. `get label() { return vocab.Partners; }`).
+Internal names (tables, API fields, enum values such as `RESELLER`) do not change.
+
+Still tyre-specific until Phase 1.4: product fields (size, load index, speed rating), the product import template
+and size search.
 
 ## 3. Policy — partly available
 Available as settings today: currency, find window for stock checks, stock-check frequency, request limits,

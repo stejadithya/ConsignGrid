@@ -17,6 +17,8 @@ import {
 } from "./shared";
 import { StockCheckAlerts } from "./StockCheckAlerts";
 import { StockCheckSchedule, useStockCheckSchedule } from "../StockCheckSchedule";
+import { vocab } from "@/lib/terms";
+import { branding } from "@/config/branding";
 
 /** Customers without a stocktake in this many days are shown as "stocktake due". */
 const STOCKTAKE_DUE_DAYS = 30;
@@ -76,7 +78,7 @@ export function SalesRepresentativeDashboard() {
     const shortLocs = new Set(view.short.map((p) => p.location_id)).size;
     if (shortLocs) out.push({ key: "short", tone: "warn", icon: Store, href: "/consignment", title: `${plural(shortLocs, "customer location")} low on consignment stock`, detail: `${view.short.reduce((a, p) => a + p.remaining_unmet, 0)} unit(s) below target and not yet requested` });
     if (view.backorders.length) out.push({ key: "back", tone: "warn", icon: Hourglass, href: "/backorders", title: plural(view.backorders.length, "outstanding customer backorder"), detail: `${view.backorders.reduce((a, r) => a + r.qty_awaiting_supply, 0)} unit(s) awaiting supply` });
-    if (view.requested.length) out.push({ key: "tr", tone: "info", icon: ArrowLeftRight, href: "/transfers", title: plural(view.requested.length, "pending transfer request"), detail: "Waiting for dealership approval" });
+    if (view.requested.length) out.push({ key: "tr", tone: "info", icon: ArrowLeftRight, href: "/transfers", title: plural(view.requested.length, "pending transfer request"), detail: `Waiting for ${branding.companyName} approval` });
     return out;
   }, [view]);
 
@@ -101,24 +103,24 @@ export function SalesRepresentativeDashboard() {
   return (
     <>
       <DashboardHeader name={user.full_name}
-        subtitle={assigned.length ? `Your day on the road: ${plural(assigned.length, "dealer")} assigned to you.` : "Your day on the road: stock checks, sales, hand-overs and requests for your dealers."}
+        subtitle={assigned.length ? `Your day on the road: ${plural(assigned.length, vocab.partner, vocab.partners)} assigned to you.` : `Your day on the road: stock checks, sales, hand-overs and requests for your ${vocab.partners}.`}
         actions={<>
           {can("transfer.request") && <CheckStockButton />}
           {can("sales.record") && <ButtonLink href="/sales?new=1"><ShoppingCart aria-hidden />Record sale</ButtonLink>}
           {can("stocktake.record") && <ButtonLink href="/stocktakes/new" variant="primary"><ClipboardCheck aria-hidden />Start stock check</ButtonLink>}
         </>} />
       <Alert>{error}</Alert>
-      {!resellers && !error && <Loading label="Loading your dealers…" />}
+      {!resellers && !error && <Loading label={`Loading your ${vocab.partners}…`} />}
       {resellers && (
         <>
           {resellers.length > 0 && !assigned.length && (
-            <Alert tone="info">No dealers are assigned to you yet, so all active dealers are shown. The Relationship Manager can assign you on each dealer’s profile.</Alert>
+            <Alert tone="info">No {vocab.partners} are assigned to you yet, so all active {vocab.partners} are shown. The Relationship Manager can assign you on each {vocab.partner}’s profile.</Alert>
           )}
           <RoleBanner theme="field" figures={[
-            { label: "My dealers", value: customers.length, href: "/resellers", hint: assigned.length ? "Assigned to you" : "All active dealers" },
+            { label: `My ${vocab.partners}`, value: customers.length, href: "/resellers", hint: assigned.length ? "Assigned to you" : `All active ${vocab.partners}` },
             { label: "Stock checks due", value: dueChecks.length, href: "/sales", hint: `Overdue or due today (every ${STOCKTAKE_DUE_DAYS} days)`, tone: dueChecks.length ? "warn" : undefined },
-            { label: "To hand over", value: view.carrying.length, href: links.deliveries(), hint: "Tyres you are carrying", tone: view.carrying.length ? "warn" : undefined },
-            { label: "Sold this month", value: soldUnits, href: "/sales", hint: "Tyres at your dealers" },
+            { label: "To hand over", value: view.carrying.length, href: links.deliveries(), hint: `${vocab.Items} you are carrying`, tone: view.carrying.length ? "warn" : undefined },
+            { label: "Sold this month", value: soldUnits, href: "/sales", hint: `${vocab.Items} at your ${vocab.partners}` },
             { label: "Waiting for supply", value: waitingUnits, href: "/backorders", hint: plural(view.backorders.length, "open request"), tone: waitingUnits ? "warn" : undefined },
           ]} />
           <StockCheckAlerts />
@@ -127,17 +129,17 @@ export function SalesRepresentativeDashboard() {
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
             <Section title="Today's visits" className="xl:col-span-3" description="Each line opens the screen to do it">
               <JobList jobs={[
-                { label: "Hand over tyres you are carrying", value: view.carrying.length, hint: "Dealer confirms with name and notes", href: links.deliveries(), icon: Truck, urgent: view.carrying.length > 0 },
-                { label: "Do stock checks", value: dueChecks.length, hint: "Shops overdue or due today; move one if it can't happen", href: "/stocktakes/new", icon: ClipboardCheck },
-                { label: "Top up dealers below agreed level", value: shortLocs, hint: `${view.short.reduce((a, p) => a + p.remaining_unmet, 0)} tyre(s) short`, href: "/consignment", icon: RefreshCw },
-                { label: "Transfers waiting for approval", value: view.requested.length, hint: "Tyres asked for between dealers", href: "/transfers", icon: Inbox },
-                { label: "Follow up on waiting orders", value: view.backorders.length, hint: `${plural(waitingUnits, "tyre")} waiting for supply`, href: "/backorders", icon: Hourglass },
+                { label: `Hand over ${vocab.items} you are carrying`, value: view.carrying.length, hint: `${vocab.Partner} confirms with name and notes`, href: links.deliveries(), icon: Truck, urgent: view.carrying.length > 0 },
+                { label: "Do stock checks", value: dueChecks.length, hint: `${vocab.Sites} overdue or due today; move one if it can't happen`, href: "/stocktakes/new", icon: ClipboardCheck },
+                { label: `Top up ${vocab.partners} below agreed level`, value: shortLocs, hint: `${view.short.reduce((a, p) => a + p.remaining_unmet, 0)} ${vocab.item}(s) short`, href: "/consignment", icon: RefreshCw },
+                { label: "Transfers waiting for approval", value: view.requested.length, hint: `${vocab.Items} asked for between ${vocab.partners}`, href: "/transfers", icon: Inbox },
+                { label: "Follow up on waiting orders", value: view.backorders.length, hint: `${plural(waitingUnits, vocab.item, vocab.items)} waiting for supply`, href: "/backorders", icon: Hourglass },
               ]} />
             </Section>
             <Section title="Hand-overs" className="xl:col-span-2" description="To collect, and in your vehicle now">
               <Card padded={false}>
                 <DataTable search={false} pageSize={6} rowKey={(x) => x.key} rows={deliveries && transfers ? view.carrying : null}
-                  empty="Nothing to hand over" emptyHint="Transfers you are asked to carry, and deliveries and transfers you collect, appear here until the dealer confirms."
+                  empty="Nothing to hand over" emptyHint={`Transfers you are asked to carry, and deliveries and transfers you collect, appear here until the ${vocab.partner} confirms.`}
                   columns={[
                     { key: "n", header: "What", cell: (x) => <Link className="link" href={x.href}><div className="font-medium">{x.number}</div><div className="text-caption text-ink-muted">{x.kind}</div></Link> },
                     { key: "t", header: "Route", cell: (x) => <FlowInline from={x.from} to={x.to || "—"} /> },
@@ -146,12 +148,12 @@ export function SalesRepresentativeDashboard() {
             </Section>
           </div>
 
-          <Section title="My dealers">
+          <Section title={`My ${vocab.partners}`}>
             <Card padded={false}>
-              <DataTable mobile="cards" label="My dealers" rows={customers} rowKey={(c) => c.id} search={customers.length > 8} pageSize={10}
-                empty="No dealer accounts yet" emptyHint="Dealer accounts appear here once the Relationship Manager creates them."
+              <DataTable mobile="cards" label={`My ${vocab.partners}`} rows={customers} rowKey={(c) => c.id} search={customers.length > 8} pageSize={10}
+                empty={`No ${vocab.partner} accounts yet`} emptyHint={`${vocab.Partner} accounts appear here once the Relationship Manager creates them.`}
                 columns={[
-                  { key: "n", mobile: "primary", header: "Dealer", value: (c) => c.business_name, cell: (c) => <div><Link className="link" href={`/resellers/${c.id}`}>{c.business_name}</Link><div className="sku text-label text-ink-secondary">{c.account_ref}</div></div> },
+                  { key: "n", mobile: "primary", header: vocab.Partner, value: (c) => c.business_name, cell: (c) => <div><Link className="link" href={`/resellers/${c.id}`}>{c.business_name}</Link><div className="sku text-label text-ink-secondary">{c.account_ref}</div></div> },
                   { key: "st", mobile: "field", mobileOrder: 1, header: "Last stock check", value: (c) => view.lastCount.get(c.id) ?? "", cell: (c) => view.lastCount.get(c.id) ? <span className="text-ink-secondary">{fmtDate(view.lastCount.get(c.id))}</span> : <Badge value="ACTION_REQUIRED" label="Never" /> },
                   { key: "sm", mobile: "field", mobileOrder: 2, header: "Sold this month", align: "right", value: (c) => view.soldMonth.get(c.id) ?? 0, cell: (c) => <NumLink href={`/sales?reseller=${c.id}`}><Qty value={view.soldMonth.get(c.id) ?? 0} /></NumLink> },
                   { key: "oh", header: "In stock", align: "right", value: (c) => view.stock.get(c.id) ?? 0, cell: (c) => <NumLink href="/consignment"><Qty value={view.stock.get(c.id) ?? 0} /></NumLink> },
@@ -163,9 +165,9 @@ export function SalesRepresentativeDashboard() {
 
           <Section title="Needs attention">
             <div className="grid grid-cols-1 gap-4 items-start xl:grid-cols-2">
-              <AttentionList items={attention} emptyDescription="Your dealers have no shortfalls, waiting orders or pending transfers." />
+              <AttentionList items={attention} emptyDescription={`Your ${vocab.partners} have no shortfalls, waiting orders or pending transfers.`} />
               <Card title="Recent activity" padded={false}>
-                <ActivityList items={activity} emptyTitle="No dealer activity yet" emptyDescription="Stock checks, reported sales and requests will appear here." />
+                <ActivityList items={activity} emptyTitle={`No ${vocab.partner} activity yet`} emptyDescription="Stock checks, reported sales and requests will appear here." />
               </Card>
             </div>
           </Section>

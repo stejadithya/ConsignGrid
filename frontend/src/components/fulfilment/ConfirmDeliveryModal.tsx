@@ -9,6 +9,7 @@ import type { Delivery } from "@/lib/types";
 import { TyreLabel } from "../pickers";
 import { blankReceipt, ReceiptFields, receiptBody, receiptReady, type Receipt } from "../ReceiptProof";
 import { Alert, Button, Field, Input, Modal } from "../ui";
+import { vocab } from "@/lib/terms";
 
 export interface DeliveryConfirmation extends ReturnType<typeof receiptBody> {
   delivered_on: string;
@@ -29,7 +30,7 @@ export function ConfirmDeliveryModal({ d, busy, error, onClose, onSubmit }: {
   const short = d.lines.some((l) => Number(qty[l.id]) < l.qty_dispatched);
   return (
     <Modal open title={`Confirm delivery of ${d.number}`} onClose={onClose}
-      description="Record what actually arrived. Received stock moves into the dealer's consignment stock."
+      description={`Record what actually arrived. Received stock moves into the ${vocab.partner}'s consignment stock.`}
       footer={<><Button onClick={onClose}>Back</Button>
         <Button variant="primary" disabled={busy || invalid} onClick={() => onSubmit({
           delivered_on: date, reference: reference.trim() || null, ...receiptBody(receipt),

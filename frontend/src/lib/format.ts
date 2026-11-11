@@ -1,3 +1,4 @@
+import { vocab } from "@/lib/terms";
 export function fmtDate(value?: string | null): string {
   if (!value) return "—";
   const d = new Date(value.length === 10 ? `${value}T00:00:00` : value);
@@ -31,5 +32,5 @@ export function todayIso(): string {
 export function humanize(value?: string | null): string {
   if (!value) return "—";
   // Internal codes keep the word RESELLER; people see "dealer" (e.g. RESELLER_REPORT → "Dealer report").
-  return value.toLowerCase().replace(/_/g, " ").replace(/\breseller(s?)\b/g, "dealer$1").replace(/^\w/, (c) => c.toUpperCase());
+  return value.toLowerCase().replace(/_/g, " ").replace(/\breseller(s?)\b/g, (_m, s: string) => (s ? vocab.partners : vocab.partner)).replace(/^\w/, (c) => c.toUpperCase());
 }

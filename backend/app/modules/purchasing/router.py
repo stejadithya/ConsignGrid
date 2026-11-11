@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
+from app.core.industry import vocab
 from app.core.lookups import Names
 from app.core.permissions import P
 from app.modules.identity.deps import DB, require
@@ -33,7 +34,7 @@ def _staff(user: User):
     from app.core.errors import PermissionDeniedError
 
     if user.is_reseller_user:
-        raise PermissionDeniedError("Not available to dealer users")
+        raise PermissionDeniedError(f"Not available to {vocab.partner} users")
 
 
 def po_out(db, pos: list[PurchaseOrder]) -> list[POOut]:

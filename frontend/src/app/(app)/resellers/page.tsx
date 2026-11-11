@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Reseller, ResellerSummary, Stocktake, UserOut } from "@/lib/types";
 import { branding } from "@/config/branding";
+import { vocab } from "@/lib/terms";
 
 interface ConsRow { reseller_id: number; on_hand: number }
 interface BackRow { reseller_id: number; qty_outstanding: number; qty_awaiting_supply: number }
@@ -49,8 +50,8 @@ export default function ResellersPage() {
 
   return (
     <>
-      <PageHeader title="Dealers" subtitle="Dealer accounts holding consignment stock, with their outstanding replenishment and uninvoiced activity."
-        actions={can("reseller.write") && <Button variant="primary" onClick={() => setOpen(true)}><Plus aria-hidden />New dealer</Button>} />
+      <PageHeader title={vocab.Partners} subtitle={`${vocab.Partner} accounts holding consignment stock, with their outstanding replenishment and uninvoiced activity.`}
+        actions={can("reseller.write") && <Button variant="primary" onClick={() => setOpen(true)}><Plus aria-hidden />New {vocab.partner}</Button>} />
       <Alert>{error}</Alert>
       {data && !status && (
         <MetricStrip items={[
@@ -61,15 +62,15 @@ export default function ResellersPage() {
         ]} />
       )}
       <Card padded={false}>
-        <DataTable mobile="cards" label="Dealers" rows={data} rowKey={(r) => r.id} onRowClick={(r) => router.push(`/resellers/${r.id}`)} searchPlaceholder="Search name, account, rep…"
-          empty={status ? "No dealers with this status" : "No dealer accounts yet"}
-          emptyHint={status ? undefined : "Create the first dealer account to begin consignment operations."}
-          emptyAction={!status && can("reseller.write") ? <Button size="sm" variant="primary" onClick={() => setOpen(true)}><Plus aria-hidden />New dealer</Button> : undefined}
+        <DataTable mobile="cards" label={vocab.Partners} rows={data} rowKey={(r) => r.id} onRowClick={(r) => router.push(`/resellers/${r.id}`)} searchPlaceholder="Search name, account, rep…"
+          empty={status ? `No ${vocab.partners} with this status` : `No ${vocab.partner} accounts yet`}
+          emptyHint={status ? undefined : `Create the first ${vocab.partner} account to begin consignment operations.`}
+          emptyAction={!status && can("reseller.write") ? <Button size="sm" variant="primary" onClick={() => setOpen(true)}><Plus aria-hidden />New {vocab.partner}</Button> : undefined}
           filterCount={status ? 1 : 0} onClearFilters={() => setStatus("")}
           filters={<FilterField label="Status" className="w-40"><Select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)} placeholder="All statuses"
             options={["ACTIVE", "ON_HOLD", "CLOSED"].map((s) => ({ value: s, label: s === "ON_HOLD" ? "On hold" : s.charAt(0) + s.slice(1).toLowerCase() }))} /></FilterField>}
           columns={[
-            { key: "name", mobile: "primary" as const, header: "Dealer", mobileSort: "Dealer name", value: (r) => `${r.business_name} ${r.account_ref}`, cell: (r) => (
+            { key: "name", mobile: "primary" as const, header: vocab.Partner, mobileSort: `${vocab.Partner} name`, value: (r) => `${r.business_name} ${r.account_ref}`, cell: (r) => (
               <div className="flex items-center gap-3">
                 <span aria-hidden className="inline-flex size-9 shrink-0 items-center justify-center rounded-control bg-neutral-soft text-caption font-semibold text-ink-secondary">
                   {r.business_name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
@@ -91,7 +92,7 @@ export default function ResellersPage() {
             ...(uninv ? [{ key: "uninv", mobile: "field" as const, mobileOrder: 3, header: "Sold, not invoiced", align: "right" as const, value: (r: ResellerSummary) => agg.get(r.id)?.uninvQty ?? 0,
               cell: (r: ResellerSummary) => {
                 const a = agg.get(r.id);
-                return a?.uninvQty ? <div><span className="font-medium">{a.uninvQty}</span><div className="text-caption text-ink-muted">tyre(s)</div></div> : <span className="text-ink-muted">—</span>;
+                return a?.uninvQty ? <div><span className="font-medium">{a.uninvQty}</span><div className="text-caption text-ink-muted">{vocab.item}(s)</div></div> : <span className="text-ink-muted">—</span>;
               } }] : []),
             ...(stocktakes ? [{ key: "st", header: "Last stocktake", value: (r: ResellerSummary) => agg.get(r.id)?.lastCount ?? "",
               cell: (r: ResellerSummary) => <span className="text-ink-secondary">{agg.get(r.id)?.lastCount ? fmtDate(agg.get(r.id)!.lastCount) : "Never"}</span> }] : []),
@@ -110,12 +111,12 @@ function LoginCreated({ login, onDone }: { login: { email: string; temporary_pas
     try { await navigator.clipboard.writeText(`Email: ${login.email}\nTemporary password: ${login.temporary_password}`); setCopied(true); } catch { setCopied(false); }
   }
   return (
-    <Modal open title="Dealer login created" description="Shown once. Write it down or copy it now." onClose={onDone}
-      footer={<Button variant="primary" onClick={onDone}>Done — open the dealer</Button>}>
+    <Modal open title={`${vocab.Partner} login created`} description="Shown once. Write it down or copy it now." onClose={onDone}
+      footer={<Button variant="primary" onClick={onDone}>Done — open the {vocab.partner}</Button>}>
       <DefinitionList columns={1} items={[["Email (username)", <span key="e" className="sku">{login.email}</span>],
         ["Temporary password", <span key="p" className="sku text-body-lg font-semibold tracking-wide" data-testid="temporary-password">{login.temporary_password}</span>]]} />
       <Button onClick={copy}><Copy aria-hidden />{copied ? "Copied" : "Copy"}</Button>
-      <Alert tone="info">Share privately (phone or in person), not in a group chat or by email. The dealer chooses their own password when they first sign in.</Alert>
+      <Alert tone="info">Share privately (phone or in person), not in a group chat or by email. The {vocab.partner} chooses their own password when they first sign in.</Alert>
     </Modal>
   );
 }
@@ -182,7 +183,7 @@ function NewResellerModal({ onClose, onCreated }: { onClose: () => void; onCreat
       // A new dealer's first stock goes to the warehouse for approval, picking and delivery like any order.
       setCreated(r);
       if (!(await action.run(() => api.post("/stock-requests", { location_id: r.locations[0].id, lines: stock, submit: true,
-        notes: "First order for a new dealer" })))) return;   // dealer exists; show the error
+        notes: `First order for a new ${vocab.partner}` })))) return;   // dealer exists; show the error
     }
     if (agreementFile) {
       setCreated(r);
@@ -193,15 +194,15 @@ function NewResellerModal({ onClose, onCreated }: { onClose: () => void; onCreat
   }
   if (login) return <LoginCreated login={login} onDone={() => onCreated(login.id)} />;
   return (
-    <Modal open title="New dealer" onClose={onClose} wide>
+    <Modal open title={`New ${vocab.partner}`} onClose={onClose} wide>
       <form onSubmit={submit} className="space-y-3">
         <Alert>{action.error}</Alert>
-        {created && <Alert tone="warn">{created.business_name} was created, but the stock or agreement copy was not saved. Add it from the dealer&apos;s page
+        {created && <Alert tone="warn">{created.business_name} was created, but the stock or agreement copy was not saved. Add it from the {vocab.partner}&apos;s page
           (<button type="button" className="underline" onClick={() => onCreated(created.id)}>open {created.business_name}</button>).</Alert>}
         <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2" disabled={!!created}>
-          <legend className="mb-1.5 text-label font-medium text-ink">Is this dealer already trading with {branding.companyName}?</legend>
-          {[{ v: false, t: "New dealer", d: `Starting with ${branding.companyName} now. Their first order goes to the warehouse for approval, then the Sales Rep delivers it.` },
-            { v: true, t: `Existing ${branding.companyName} dealer`, d: `Already holds stock ${branding.companyName} supplied; record it as their initial stock.` }].map((o) => (
+          <legend className="mb-1.5 text-label font-medium text-ink">Is this {vocab.partner} already trading with {branding.companyName}?</legend>
+          {[{ v: false, t: `New ${vocab.partner}`, d: `Starting with ${branding.companyName} now. Their first order goes to the warehouse for approval, then the Sales Rep delivers it.` },
+            { v: true, t: `Existing ${branding.companyName} ${vocab.partner}`, d: `Already holds stock ${branding.companyName} supplied; record it as their initial stock.` }].map((o) => (
             <label key={o.t} className={`flex cursor-pointer gap-2.5 rounded-control border p-3 ${existing === o.v ? "border-ink bg-subtle" : "border-line"}`}>
               <input type="radio" name="existing" className="mt-0.5 size-4 accent-ink" checked={existing === o.v} onChange={() => setExisting(o.v)} />
               <span><span className="block text-body font-medium">{o.t}</span><span className="block text-caption text-ink-muted">{o.d}</span></span>
@@ -211,21 +212,21 @@ function NewResellerModal({ onClose, onCreated }: { onClose: () => void; onCreat
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Business name" required info="Shown on every screen and printed on delivery notes and invoices. Use the name exactly as in Xero.">
             {(id) => <Input id={id} value={f.business_name} onChange={set("business_name")} required />}</Field>
-          <Field label="Account reference (automatic)" hint="Made from the business name and the first shop's city; confirmed when you save."
-            info="Created automatically. It identifies this dealer on requests, deliveries, delivery notes, invoices, Xero and reports, so it never changes.">
+          <Field label="Account reference (automatic)" hint={`Made from the business name and the first ${vocab.site}'s city; confirmed when you save.`}
+            info={`Created automatically. It identifies this ${vocab.partner} on requests, deliveries, delivery notes, invoices, Xero and reports, so it never changes.`}>
             {(id) => <div className="relative">
               <Input id={id} value={f.business_name.trim() ? preview ?? "…" : ""} disabled aria-readonly placeholder="Created from the name and city"
                 className="cursor-not-allowed bg-subtle pr-9 sku text-ink-secondary" />
               <Lock className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-ink-muted" aria-hidden />
             </div>}
           </Field>
-          <Field label="Trading name" info="Optional shop sign name.">{(id) => <Input id={id} value={f.trading_name} onChange={set("trading_name")} />}</Field>
+          <Field label="Trading name" info={`Optional ${vocab.site} sign name.`}>{(id) => <Input id={id} value={f.trading_name} onChange={set("trading_name")} />}</Field>
           <Field label="Contact name" required>{(id) => <Input id={id} value={f.contact_name} onChange={set("contact_name")} required />}</Field>
           <Field label="Email" required>{(id) => <Input id={id} type="email" value={f.email} onChange={set("email")} required />}</Field>
           <Field label="Phone" required>{(id) => <Input id={id} value={f.phone} onChange={set("phone")} required />}</Field>
           <Field label="Sales representative" required>{(id) => <Select id={id} value={f.sales_rep_user_id} onChange={set("sales_rep_user_id")} placeholder="Choose a sales rep" required
             options={(reps ?? []).map((u) => ({ value: u.id, label: u.full_name }))} />}</Field>
-          <Field label="Billing address" hint="One per dealer, used for invoices." required>{(id) => <Input id={id} value={f.billing_address} onChange={set("billing_address")} required />}</Field>
+          <Field label="Billing address" hint={`One per ${vocab.partner}, used for invoices.`} required>{(id) => <Input id={id} value={f.billing_address} onChange={set("billing_address")} required />}</Field>
           <Field label="Payment terms (days)">{(id) => <Input id={id} type="number" min={0} value={f.payment_terms_days} onChange={set("payment_terms_days")} />}</Field>
           <Field label="Consignment agreement ref.">{(id) => <Input id={id} value={f.agreement_reference} onChange={set("agreement_reference")} />}</Field>
           <Field label="Copy of the signed agreement" hint="Optional. PDF or photo, up to 5 MB.">
@@ -234,58 +235,58 @@ function NewResellerModal({ onClose, onCreated }: { onClose: () => void; onCreat
           <Field label="Transfer consent">{(id) => <Select id={id} value={f.transfer_consent} onChange={set("transfer_consent")}
             options={[{ value: "PRE_AUTHORISED", label: "Pre-authorised" }, { value: "PER_TRANSFER", label: "Consent per transfer" }, { value: "NOT_ALLOWED", label: "Transfers out not allowed" }]} />}</Field>
         </div>
-        <section className="rounded-control border border-line p-3" aria-label="Shops">
-          <div className="mb-1 text-body font-medium">Shops (delivery locations)</div>
-          <p className="mb-3 text-caption text-ink-muted">Where tyres are delivered. Each shop gets a code from the account reference (e.g. AKT-AUC-001-01).</p>
+        <section className="rounded-control border border-line p-3" aria-label={vocab.Sites}>
+          <div className="mb-1 text-body font-medium">{vocab.Sites} (delivery locations)</div>
+          <p className="mb-3 text-caption text-ink-muted">Where {vocab.items} are delivered. Each {vocab.site} gets a code from the account reference (e.g. AKT-AUC-001-01).</p>
           <div className="space-y-3">
             {shops.map((s, i) => (
               <fieldset key={i} className="grid grid-cols-1 gap-3 rounded-control bg-subtle p-3 sm:grid-cols-2">
-                <legend className="sr-only">Shop {i + 1}</legend>
+                <legend className="sr-only">{vocab.Site} {i + 1}</legend>
                 <div className="flex items-center justify-between sm:col-span-2">
-                  <span className="text-label font-medium">Shop {i + 1}{i === 0 && " (required)"}</span>
+                  <span className="text-label font-medium">{vocab.Site} {i + 1}{i === 0 && " (required)"}</span>
                   {i > 0 && <Button size="sm" variant="ghost" onClick={() => setShops((all) => all.filter((_, j) => j !== i))}>Remove</Button>}
                 </div>
-                <Field label={`Shop ${i + 1} name`}>{(id) => <Input id={id} value={s.name} onChange={setShop(i, "name")} placeholder={f.business_name || "Shop name"} />}</Field>
-                <Field label={`Shop ${i + 1} contact phone`}>{(id) => <Input id={id} value={s.contact_phone} onChange={setShop(i, "contact_phone")} />}</Field>
-                <Field label={`Shop ${i + 1} delivery address`} required>{(id) => <Input id={id} value={s.address_line1} onChange={setShop(i, "address_line1")} required placeholder="Address line 1" />}</Field>
-                <Field label={`Shop ${i + 1} address line 2`}>{(id) => <Input id={id} value={s.address_line2} onChange={setShop(i, "address_line2")} />}</Field>
-                <Field label={`Shop ${i + 1} city`} required>{(id) => <Input id={id} value={s.city} onChange={setShop(i, "city")} required />}</Field>
-                <Field label={`Shop ${i + 1} postcode`}>{(id) => <Input id={id} value={s.postcode} onChange={setShop(i, "postcode")} />}</Field>
+                <Field label={`${vocab.Site} ${i + 1} name`}>{(id) => <Input id={id} value={s.name} onChange={setShop(i, "name")} placeholder={f.business_name || `${vocab.Site} name`} />}</Field>
+                <Field label={`${vocab.Site} ${i + 1} contact phone`}>{(id) => <Input id={id} value={s.contact_phone} onChange={setShop(i, "contact_phone")} />}</Field>
+                <Field label={`${vocab.Site} ${i + 1} delivery address`} required>{(id) => <Input id={id} value={s.address_line1} onChange={setShop(i, "address_line1")} required placeholder="Address line 1" />}</Field>
+                <Field label={`${vocab.Site} ${i + 1} address line 2`}>{(id) => <Input id={id} value={s.address_line2} onChange={setShop(i, "address_line2")} />}</Field>
+                <Field label={`${vocab.Site} ${i + 1} city`} required>{(id) => <Input id={id} value={s.city} onChange={setShop(i, "city")} required />}</Field>
+                <Field label={`${vocab.Site} ${i + 1} postcode`}>{(id) => <Input id={id} value={s.postcode} onChange={setShop(i, "postcode")} />}</Field>
               </fieldset>
             ))}
           </div>
-          <Button size="sm" className="mt-3" onClick={() => setShops((all) => [...all, blankShop()])}><Plus aria-hidden />Add another shop</Button>
+          <Button size="sm" className="mt-3" onClick={() => setShops((all) => [...all, blankShop()])}><Plus aria-hidden />Add another {vocab.site}</Button>
         </section>
         {!existing && (
           <div className="rounded-control border border-line p-3">
             <div className="mb-2 text-body font-medium">First order (optional)</div>
-            <p className="mb-3 text-caption text-ink-muted">Tyres to send to the first shop. Saved as a stock request: the warehouse checks and approves it,
-              then the Sales Rep delivers it. You can also order later from the dealer&apos;s page.</p>
+            <p className="mb-3 text-caption text-ink-muted">{vocab.Items} to send to the first {vocab.site}. Saved as a stock request: the warehouse checks and approves it,
+              then the Sales Rep delivers it. You can also order later from the {vocab.partner}&apos;s page.</p>
             <StockLinesEditor lines={lines} onChange={setLines} />
           </div>
         )}
         {existing && (
           <div className="rounded-control border border-line p-3">
             <div className="mb-2 text-body font-medium">Initial stock (backorder)</div>
-            <p className="mb-3 text-caption text-ink-muted">Tyres this dealer holds today. Saved to the first shop as their consignment stock. You can also add it later from the dealer&apos;s page.</p>
-            <Tabs active={stockMode} onChange={setStockMode} tabs={[{ id: "enter", label: "Enter tyres" }, { id: "excel", label: "Upload Excel" }]} />
+            <p className="mb-3 text-caption text-ink-muted">{vocab.Items} this {vocab.partner} holds today. Saved to the first {vocab.site} as their consignment stock. You can also add it later from the {vocab.partner}&apos;s page.</p>
+            <Tabs active={stockMode} onChange={setStockMode} tabs={[{ id: "enter", label: `Enter ${vocab.items}` }, { id: "excel", label: "Upload Excel" }]} />
             {stockMode === "excel"
               ? <><InitialStockFilePicker file={stockFile} onChange={setStockFile} />
-                  <p className="mt-2 text-caption text-ink-muted">Imported when you save. If a row has a problem, nothing is imported and you can fix it from the dealer&apos;s page.</p></>
+                  <p className="mt-2 text-caption text-ink-muted">Imported when you save. If a row has a problem, nothing is imported and you can fix it from the {vocab.partner}&apos;s page.</p></>
               : <StockLinesEditor lines={lines} onChange={setLines} />}
           </div>
         )}
         {canLogin && (
           <label className="flex cursor-pointer items-start gap-2.5 rounded-control border border-line p-3">
             <input type="checkbox" className="mt-0.5 size-4 accent-ink" checked={withLogin} onChange={(e) => setWithLogin(e.target.checked)} />
-            <span><span className="block text-body font-medium">Create a login for this dealer</span>
+            <span><span className="block text-body font-medium">Create a login for this {vocab.partner}</span>
               <span className="block text-caption text-ink-muted">Their email above becomes the username. A temporary password is shown once, after saving.</span></span>
           </label>
         )}
         {/* Phones: the form's buttons stay at the bottom of the screen while this long dialog scrolls, like a dialog footer. */}
         <div className="flex justify-end gap-2 max-sm:sticky max-sm:bottom-0 max-sm:-mx-5 max-sm:-mb-5 max-sm:rounded-b-card max-sm:border-t max-sm:border-line max-sm:bg-subtle max-sm:px-5 max-sm:pt-3 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]"><Button type="button" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={action.busy || !!created}>{existing && (stockMode === "excel" ? !!stockFile : validLines(lines).length > 0) ? "Create dealer and add stock"
-            : !existing && validLines(lines).length > 0 ? "Create dealer and send first order" : "Create dealer"}</Button></div>
+          <Button type="submit" variant="primary" disabled={action.busy || !!created}>{existing && (stockMode === "excel" ? !!stockFile : validLines(lines).length > 0) ? `Create ${vocab.partner} and add stock`
+            : !existing && validLines(lines).length > 0 ? `Create ${vocab.partner} and send first order` : `Create ${vocab.partner}`}</Button></div>
       </form>
     </Modal>
   );

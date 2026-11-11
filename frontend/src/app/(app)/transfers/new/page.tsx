@@ -14,6 +14,8 @@ import { useAuth } from "@/lib/auth";
 import { humanize } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import type { ReplenishmentRequest, SourceOption, Transfer } from "@/lib/types";
+import { vocab } from "@/lib/terms";
+import { branding } from "@/config/branding";
 
 const STEPS = ["Requirement", "Availability & source", "Approval"];
 
@@ -71,7 +73,7 @@ export default function NewTransferPage() {
 
   return (
     <>
-      <PageHeader title="New inter-dealer transfer" subtitle="Use when the warehouse cannot supply an urgent need and another dealer holds unsold stock of the exact SKU."
+      <PageHeader title="New inter-dealer transfer" subtitle={`Use when the warehouse cannot supply an urgent need and another ${vocab.partner} holds unsold stock of the exact SKU.`}
         actions={can("transfer.request") && <CheckStockButton />} />
       <ol className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-body" aria-label="Progress">
         {STEPS.map((s, i) => (
@@ -92,7 +94,7 @@ export default function NewTransferPage() {
       {step === 0 && (
         <Card title="Who needs what?" className="max-w-3xl">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Requesting (receiving) dealer location" required>{(id) => <LocationSelect id={id} types={["CONSIGNMENT"]} value={dest} onChange={(v) => { setDest(v); setDestRequest(null); }} />}</Field>
+            <Field label={`Requesting (receiving) ${vocab.partner} location`} required>{(id) => <LocationSelect id={id} types={["CONSIGNMENT"]} value={dest} onChange={(v) => { setDest(v); setDestRequest(null); }} />}</Field>
             <Field label="Quantity" required error={tooMany ? `${linkedReq?.number} has ${linkedReq?.qty_awaiting_supply} awaiting supply. Lower the quantity, or choose "No — separate urgent need" for the rest.` : undefined}>
               {(id, describedBy) => <Input id={id} type="number" min={1} value={qty} aria-invalid={tooMany || undefined} aria-describedby={describedBy} onChange={(e) => setQty(e.target.value)} />}</Field>
           </div>
@@ -100,7 +102,7 @@ export default function NewTransferPage() {
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Urgency">{(id) => <Select id={id} value={urgency} onChange={(e) => setUrgency(e.target.value)} options={["URGENT", "HIGH", "NORMAL"].map((u) => ({ value: u, label: humanize(u) }))} />}</Field>
             {destBackorders.length > 0 && (
-              <Field label="Fulfils existing backorder?" hint="The oldest open backorder is linked, so it is not supplied twice and the giving dealer's replacement is tagged to it.">{(id) => <Select id={id} value={destRequest} onChange={(e) => setDestRequest(e.target.value)} placeholder="No — separate urgent need"
+              <Field label="Fulfils existing backorder?" hint={`The oldest open backorder is linked, so it is not supplied twice and the giving ${vocab.partner}'s replacement is tagged to it.`}>{(id) => <Select id={id} value={destRequest} onChange={(e) => setDestRequest(e.target.value)} placeholder="No — separate urgent need"
                 options={destBackorders.map((r) => ({ value: r.id, label: `${r.number} · ${r.qty_awaiting_supply} awaiting (${humanize(r.reason)})` }))} />}</Field>
             )}
           </div>
@@ -116,11 +118,11 @@ export default function NewTransferPage() {
               ? <Alert tone="warn">The warehouse has {sources.warehouse_available} available. Prefer normal replenishment unless the need is too urgent for a warehouse dispatch.</Alert>
               : <Alert tone="info">Warehouse available: {sources.warehouse_available}. Consignment locations holding available, unsold stock are listed below (reserved, blocked and sold stock are excluded).</Alert>)}
           </div>
-          <DataTable mobile="cards" label="Supplying dealers" search={false} rows={sources?.sources} rowKey={(s) => s.location_id} empty="No other dealer holds this SKU."
+          <DataTable mobile="cards" label={`Supplying ${vocab.partners}`} search={false} rows={sources?.sources} rowKey={(s) => s.location_id} empty={`No other ${vocab.partner} holds this SKU.`}
             onRowClick={(s) => s.eligible && setSource(s)}
             columns={[
               { key: "sel", mobile: "status", header: "", cell: (s) => <label className="relative touch-target inline-flex size-5 items-center justify-center"><input type="radio" className="size-4 accent-ink" name="source" aria-label={`Select ${s.location_code}`} disabled={!s.eligible} checked={source?.location_id === s.location_id} onChange={() => setSource(s)} /></label> },
-              { key: "r", mobile: "primary", header: "Supplying dealer", cell: (s) => <div><div className="font-medium">{s.reseller_name}</div><div className="text-label text-ink-secondary"><span className="sku">{s.account_ref}</span> · {s.location_code}</div></div> },
+              { key: "r", mobile: "primary", header: `Supplying ${vocab.partner}`, cell: (s) => <div><div className="font-medium">{s.reseller_name}</div><div className="text-label text-ink-secondary"><span className="sku">{s.account_ref}</span> · {s.location_code}</div></div> },
               { key: "oh", header: "On hand", align: "right", cell: (s) => s.on_hand },
               { key: "rs", header: "Reserved", align: "right", cell: (s) => s.reserved },
               { key: "bl", header: "Blocked", align: "right", cell: (s) => s.blocked },
@@ -146,14 +148,14 @@ export default function NewTransferPage() {
             <RefreshCw className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
             <div><div className="font-medium text-ink">Owed replacement</div><div className="text-ink-secondary">{source.reseller_name} is owed {qty} × {prod?.display_name} ({prod?.sku}), raised automatically on collection.</div></div>
           </div>
-          <p className="mt-3 text-body text-ink-secondary">Approval reserves {qty} unit(s) at {source.location_code}. Neither dealer is invoiced for the transfer; {destLoc?.name ?? "the receiving dealer"} is invoiced only when it sells the tyres.</p>
+          <p className="mt-3 text-body text-ink-secondary">Approval reserves {qty} unit(s) at {source.location_code}. Neither {vocab.partner} is invoiced for the transfer; {destLoc?.name ?? `the receiving ${vocab.partner}`} is invoiced only when it sells the {vocab.items}.</p>
           {canApprove ? (
             <div className="mt-3 space-y-3">
-              {source.transfer_consent === "PER_TRANSFER" && <Field label="Source dealer consent reference" required hint="Their agreement requires consent for each transfer (who agreed, how, when).">{(id) => <Input id={id} value={consent} onChange={(e) => setConsent(e.target.value)} />}</Field>}
+              {source.transfer_consent === "PER_TRANSFER" && <Field label={`Source ${vocab.partner} consent reference`} required hint="Their agreement requires consent for each transfer (who agreed, how, when).">{(id) => <Input id={id} value={consent} onChange={(e) => setConsent(e.target.value)} />}</Field>}
               <Field label="Approval notes">{(id) => <Textarea id={id} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
             </div>
           ) : (
-            <Alert tone="info">You can raise the request; a dealership manager must approve it and confirm the source.</Alert>
+            <Alert tone="info">You can raise the request; a {branding.companyName} manager must approve it and confirm the source.</Alert>
           )}
           <div className="mt-4">
             <MobileActionBar align="start">

@@ -10,6 +10,7 @@ import { Alert, Badge, Card, DataTable, MetricStrip, PageHeader, ProductCell, Qt
 import { fmtDateTime } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 import type { InventoryOverviewRow, StockAllocationRow } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 /** Stock overview: Total = warehouse on hand + shipped (in transit); Available = Total − Reserved − Shipped (− Blocked). */
 export function StockOverview() {
@@ -20,17 +21,17 @@ export function StockOverview() {
   return (
     <>
       <PageHeader eyebrow="Inventory" title="Stock overview"
-        subtitle="Available = Total − Reserved − Shipped. Total is warehouse stock plus stock shipped and still in transit; delivered stock sits with dealers on consignment." />
+        subtitle={`Available = Total − Reserved − Shipped. Total is warehouse stock plus stock shipped and still in transit; delivered stock sits with ${vocab.partners} on consignment.`} />
       <Alert>{error}</Alert>
       <MetricStrip items={[
         { label: "Total", value: <NumLink href={links.movements()}>{sum("total").toLocaleString()}</NumLink>, hint: "Warehouse + in transit" },
         { label: "Available", value: sum("available").toLocaleString(), tone: "accent", hint: "Free to approve" },
         { label: "Reserved", value: <NumLink href={links.reserved()}>{sum("reserved").toLocaleString()}</NumLink>, tone: "info", hint: "Approved, not shipped" },
         { label: "Shipped", value: <NumLink href={links.deliveries()}>{sum("shipped").toLocaleString()}</NumLink>, hint: "In transit" },
-        { label: "Delivered", value: <NumLink href={links.atDealers()}>{sum("delivered").toLocaleString()}</NumLink>, tone: "ok", hint: "At dealers (consignment)" },
+        { label: "Delivered", value: <NumLink href={links.atDealers()}>{sum("delivered").toLocaleString()}</NumLink>, tone: "ok", hint: `At ${vocab.partners} (consignment)` },
       ]} />
       <Card padded={false}>
-        <DataTable label="Stock by tyre" rows={rows} rowKey={(r) => r.product_id} searchPlaceholder="Search SKU or tyre…"
+        <DataTable label={`Stock by ${vocab.item}`} rows={rows} rowKey={(r) => r.product_id} searchPlaceholder={`Search SKU or ${vocab.item}…`}
           empty="No stock recorded yet" emptyHint="Stock appears once goods are received or opening balances are posted."
           quickFilters={<QuickFilters value={qf} onChange={setQf} options={[
             { id: "all", label: "All SKUs", count: data?.length },
@@ -42,12 +43,12 @@ export function StockOverview() {
               <div className="flex items-center gap-2"><Link href={`/products/${r.product_id}`} onClick={(e) => e.stopPropagation()}><ProductCell sku={r.sku} name={r.product_name} /></Link>
                 {!r.is_active && <Badge value="CLOSED" label="Inactive" />}</div>
             ) },
-            { key: "t", header: "Total", align: "right", value: (r) => r.total, cell: (r) => <NumLink href={links.movements(r.product_id)} title="Every movement of this tyre"><span className="num font-semibold">{r.total}</span></NumLink> },
-            { key: "a", header: "Available", align: "right", value: (r) => r.available, cell: (r) => <NumLink href={links.whereIs(r.product_id)} title="Where it is: warehouse and dealers"><Qty value={r.available} zeroMuted={false} tone={r.available <= 0 ? "danger" : "ok"} /></NumLink> },
+            { key: "t", header: "Total", align: "right", value: (r) => r.total, cell: (r) => <NumLink href={links.movements(r.product_id)} title={`Every movement of this ${vocab.item}`}><span className="num font-semibold">{r.total}</span></NumLink> },
+            { key: "a", header: "Available", align: "right", value: (r) => r.available, cell: (r) => <NumLink href={links.whereIs(r.product_id)} title={`Where it is: warehouse and ${vocab.partners}`}><Qty value={r.available} zeroMuted={false} tone={r.available <= 0 ? "danger" : "ok"} /></NumLink> },
             { key: "r", header: "Reserved", align: "right", value: (r) => r.reserved, cell: (r) => <NumLink href={r.reserved ? links.reserved(r.product_id) : null} title="Who it is reserved for"><Qty value={r.reserved} /></NumLink> },
             { key: "s", header: "Shipped", align: "right", value: (r) => r.shipped, cell: (r) => <NumLink href={r.shipped ? links.movements(r.product_id) : null} title="Shipments on the way"><Qty value={r.shipped} /></NumLink> },
             { key: "b", header: "Blocked", align: "right", value: (r) => r.blocked, cell: (r) => <NumLink href={r.blocked ? links.movements(r.product_id) : null} title="When and why it was blocked"><Qty value={r.blocked} tone="warn" /></NumLink> },
-            { key: "d", header: "Delivered", align: "right", value: (r) => r.delivered, cell: (r) => <NumLink href={r.delivered ? links.atDealers(r.sku) : null} title="Which dealers hold it"><Qty value={r.delivered} /></NumLink> },
+            { key: "d", header: "Delivered", align: "right", value: (r) => r.delivered, cell: (r) => <NumLink href={r.delivered ? links.atDealers(r.sku) : null} title={`Which ${vocab.partners} hold it`}><Qty value={r.delivered} /></NumLink> },
             { key: "q", header: "Requested (pending)", align: "right", value: (r) => r.requested_pending, cell: (r) => <NumLink href={r.requested_pending ? links.pendingRequests() : null} title="Requests waiting for approval"><Qty value={r.requested_pending} tone="warn" /></NumLink> },
           ]} />
       </Card>
@@ -65,20 +66,20 @@ export function StockAllocation() {
   return (
     <>
       <PageHeader eyebrow="Inventory" title="Stock allocation"
-        subtitle="Warehouse stock reserved for dealers. Reserved stock cannot be approved for anyone else until it ships or is released." />
+        subtitle={`Warehouse stock reserved for ${vocab.partners}. Reserved stock cannot be approved for anyone else until it ships or is released.`} />
       <Alert>{error}</Alert>
-      {product && <FilteredTo label={`Reservations of ${tyreName({ productId: product }) ?? "this tyre"}`} clearHref="/inventory/allocation" />}
+      {product && <FilteredTo label={`Reservations of ${tyreName({ productId: product }) ?? `this ${vocab.item}`}`} clearHref="/inventory/allocation" />}
       <MetricStrip items={[
         { label: "Reserved units", value: total.toLocaleString(), tone: "info" },
         { label: "Reservations", value: (data ?? []).length },
         { label: "SKUs", value: new Set((data ?? []).map((r) => r.product_id)).size },
       ]} />
       <Card padded={false}>
-        <DataTable rows={data} rowKey={(r) => r.allocation_id} searchPlaceholder="Search SKU, dealer, request…" label="Reservations"
+        <DataTable rows={data} rowKey={(r) => r.allocation_id} searchPlaceholder={`Search SKU, ${vocab.partner}, request…`} label="Reservations"
           empty="Nothing reserved" emptyHint="Approved stock requests and allocated replenishment reserve warehouse stock here."
           columns={[
             { key: "p", header: "SKU", value: (r) => `${r.sku} ${r.product_name}`, cell: (r) => <ProductCell sku={r.sku} name={r.product_name} /> },
-            { key: "r", header: "Dealer", value: (r) => r.reseller_name, cell: (r) => <div><div>{r.reseller_name}</div><div className="text-caption text-ink-muted">{r.location_code}</div></div> },
+            { key: "r", header: vocab.Partner, value: (r) => r.reseller_name, cell: (r) => <div><div>{r.reseller_name}</div><div className="text-caption text-ink-muted">{r.location_code}</div></div> },
             { key: "q", header: "Reserved", align: "right", value: (r) => r.open_qty, cell: (r) => <span className="num font-semibold">{r.open_qty}</span> },
             { key: "sr", header: "Stock request", value: (r) => r.stock_request_number, cell: (r) => r.stock_request_id
               ? <Link className="link" href={`/stock-requests/${r.stock_request_id}`}>{r.stock_request_number}</Link> : <span className="text-ink-muted">—</span> },

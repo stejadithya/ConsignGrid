@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.config import get_settings
 from app.core.db import flush_or_conflict
 from app.core.errors import BusinessRuleError, ConflictError, NotFoundError
+from app.core.industry import vocab
 from app.core.numbering import next_number
 from app.modules.audit.service import record_audit
 from app.modules.catalogue.models import Product
@@ -57,11 +58,11 @@ def create_invoice(db: Session, actor: User | None, *, reseller_id: int, sale_li
                    invoice_date: date | None = None, notes: str | None = None) -> Invoice:
     reseller = db.get(Reseller, reseller_id)
     if reseller is None:
-        raise NotFoundError("Dealer not found")
+        raise NotFoundError(f"{vocab.Partner} not found")
     if sale_line_ids is None:
         sale_line_ids = [ln.id for ln, _ in uninvoiced_lines(db, actor, reseller_id)]
     if not sale_line_ids:
-        raise BusinessRuleError("There are no uninvoiced sales for this dealer")
+        raise BusinessRuleError(f"There are no uninvoiced sales for this {vocab.partner}")
     # Lock the sale lines: concurrent invoice runs cannot pick up the same line.
     lines = db.execute(
         select(ConsignmentSaleLine).where(ConsignmentSaleLine.id.in_(sale_line_ids))
@@ -73,7 +74,7 @@ def create_invoice(db: Session, actor: User | None, *, reseller_id: int, sale_li
         select(ConsignmentSale).where(ConsignmentSale.id.in_({ln.sale_id for ln in lines}))).scalars()}
     for ln in lines:
         if sales[ln.sale_id].reseller_id != reseller.id:
-            raise BusinessRuleError("All sale lines must belong to the invoiced dealer")
+            raise BusinessRuleError(f"All sale lines must belong to the invoiced {vocab.partner}")
         if ln.invoice_status != InvoiceStatus.UNINVOICED or ln.chargeable_qty <= 0:
             raise ConflictError(f"Sale line {ln.id} ({sales[ln.sale_id].number}) is already {ln.invoice_status}")
 
@@ -113,7 +114,7 @@ def create_invoice(db: Session, actor: User | None, *, reseller_id: int, sale_li
                  entity_id=inv.id,
                  reseller_id=reseller.id,
                  summary=f"Drafted {inv.number} for {reseller.account_ref}: {len(lines)} line(s), "
-                         f"{sum(ln.chargeable_qty for ln in lines)} tyre(s)")
+                         f"{sum(ln.chargeable_qty for ln in lines)} {vocab.item}(s)")
     db.refresh(inv)
     return inv
 
@@ -138,7 +139,7 @@ def issue(db: Session, actor: User, invoice_id: int, xero_reference: str) -> Inv
     record_audit(db, actor_id=actor.id, action="invoice.issue", entity_type="invoice", entity_id=inv.id,
                  reseller_id=inv.reseller_id,
                  summary=f"Invoiced {inv.number} in Xero as {xero_reference} "
-                         f"({sum(ln.quantity for ln in inv.lines if ln.is_active)} tyre(s))",
+                         f"({sum(ln.quantity for ln in inv.lines if ln.is_active)} {vocab.item}(s))",
                  details={"xero_reference": xero_reference})
     return inv
 

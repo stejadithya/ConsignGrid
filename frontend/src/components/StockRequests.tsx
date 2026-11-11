@@ -11,6 +11,7 @@ import { useApi } from "@/lib/hooks";
 import type { RoleCode, StockRequest, StockRequestStatus } from "@/lib/types";
 import { ResellerSelect } from "./pickers";
 import { Alert, Badge, ButtonLink, Card, DataTable, FilterField, PageHeader, QuickFilters } from "./ui";
+import { vocab } from "@/lib/terms";
 
 export const STATUS_LABEL: Record<StockRequestStatus, string> = {
   DRAFT: "Draft", SUBMITTED: "Submitted", UNDER_REVIEW: "Under review", APPROVED: "Approved",
@@ -39,7 +40,7 @@ export type StockRequestView = "mine" | "pending" | "approved" | "shipments" | "
 
 const VIEWS: Record<StockRequestView, { title: string; subtitle: string; empty: string; hint: string }> = {
   mine: {
-    title: "My stock requests", subtitle: "Requests you raised (dealers see every request for their account), from draft to delivery.",
+    title: "My stock requests", get subtitle() { return `Requests you raised (${vocab.partners} see every request for their account), from draft to delivery.`; },
     empty: "No stock requests yet", hint: "Create a request with one or more SKUs; the Central Team reviews it before stock is reserved.",
   },
   pending: {
@@ -94,7 +95,7 @@ export function StockRequestList({ view }: { view: StockRequestView }) {
         actions={can("stock_request.create") && <ButtonLink href="/stock-requests/new" variant="primary"><Plus aria-hidden />Create request</ButtonLink>} />
       <Alert>{error}</Alert>
       <Card padded={false}>
-        <DataTable mobile="cards" label="Stock requests" rows={rows} rowKey={(r) => r.id} searchPlaceholder="Search request, dealer, requester…"
+        <DataTable mobile="cards" label="Stock requests" rows={rows} rowKey={(r) => r.id} searchPlaceholder={`Search request, ${vocab.partner}, requester…`}
           onRowClick={(r) => router.push(`/stock-requests/${r.id}`)}
           empty={cfg.empty} emptyHint={cfg.hint}
           quickFilters={filters.length > 0 && <QuickFilters value={qf} onChange={setQf} options={[
@@ -102,7 +103,7 @@ export function StockRequestList({ view }: { view: StockRequestView }) {
             ...filters.map((f) => ({ id: f.id, label: f.label, count: data?.filter((r) => f.statuses.includes(r.status)).length })),
           ]} />}
           filterCount={reseller ? 1 : 0} onClearFilters={() => setReseller("")}
-          filters={staff ? <FilterField label="Dealer" className="w-56"><ResellerSelect value={reseller} onChange={setReseller} /></FilterField> : undefined}
+          filters={staff ? <FilterField label={vocab.Partner} className="w-56"><ResellerSelect value={reseller} onChange={setReseller} /></FilterField> : undefined}
           columns={[
             { key: "n", mobile: "primary" as const, header: "Request", mobileSort: "Request number", value: (r) => r.number, cell: (r) => (
               <div>
@@ -110,7 +111,7 @@ export function StockRequestList({ view }: { view: StockRequestView }) {
                 <div className="text-caption text-ink-muted">{fmtDateTime(r.created_at)}</div>
               </div>
             ) },
-            ...(staff ? [{ key: "r", mobile: "secondary" as const, header: "Dealer", value: (r: StockRequest) => r.reseller_name, cell: (r: StockRequest) => (
+            ...(staff ? [{ key: "r", mobile: "secondary" as const, header: vocab.Partner, value: (r: StockRequest) => r.reseller_name, cell: (r: StockRequest) => (
               <div><div>{r.reseller_name}</div><div className="text-caption text-ink-muted">{r.location_code}</div></div>
             ) }] : []),
             { key: "by", header: "Requested by", value: (r) => r.created_by, cell: (r) => (

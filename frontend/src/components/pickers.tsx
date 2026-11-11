@@ -6,6 +6,7 @@ import { api, withQuery } from "@/lib/api";
 import { matchesSearch } from "@/lib/search";
 import type { Location, Product, ResellerSummary } from "@/lib/types";
 import { cx, Input, Select } from "./ui";
+import { vocab } from "@/lib/terms";
 
 const cache = new Map<string, Promise<unknown>>();
 
@@ -216,12 +217,12 @@ export function LocationSelect({ id, value, onChange, types, required, placehold
   );
 }
 
-export function ResellerSelect({ id, value, onChange, placeholder = "All dealers" }: {
+export function ResellerSelect({ id, value, onChange, placeholder = `All ${vocab.partners}` }: {
   id?: string; value: number | ""; onChange: (id: number | "") => void; placeholder?: string;
 }) {
   const resellers = useResellers();
   return (
-    <Select id={id} aria-label={id ? undefined : "Dealer"} value={value} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : "")}
+    <Select id={id} aria-label={id ? undefined : vocab.Partner} value={value} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : "")}
       placeholder={placeholder}
       options={(resellers ?? []).map((r) => ({ value: r.id, label: `${r.account_ref} — ${r.business_name}` }))} />
   );

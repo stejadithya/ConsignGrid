@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from app.core.errors import BusinessRuleError, NotFoundError
+from app.core.industry import vocab
 from app.core.lookups import Names
 from app.core.messages import KIND_REJECTION
 from app.core.permissions import P, Role
@@ -182,7 +183,7 @@ def deliveries_out(db, deliveries: list[Delivery]) -> list[DeliveryOut]:
 
 
 def names_for(db, d: Delivery) -> str:
-    return Names(db).add("reseller", d.reseller_id).resolve().reseller_name(d.reseller_id) or "the dealer"
+    return Names(db).add("reseller", d.reseller_id).resolve().reseller_name(d.reseller_id) or f"the {vocab.partner}"
 
 
 def _get_request(db, user: User, request_id: int) -> ReplenishmentRequest:

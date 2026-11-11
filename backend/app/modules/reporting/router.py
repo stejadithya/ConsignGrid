@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
 from app.core.errors import NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.permissions import P
 from app.modules.customers.models import Reseller
 from app.modules.identity.deps import DB, has, require
@@ -27,14 +28,14 @@ Reader = Annotated[User, Depends(require(P.REPORT_READ))]
 
 def _staff(user: User) -> None:
     if user.is_reseller_user:
-        raise PermissionDeniedError("Not available to dealer users")
+        raise PermissionDeniedError(f"Not available to {vocab.partner} users")
 
 
 def _scope(user: User, reseller_id: int | None) -> int | None:
     restricted = scoped_reseller_id(user)
     if restricted is not None:
         if reseller_id is not None and reseller_id != restricted:
-            raise NotFoundError("Dealer not found")
+            raise NotFoundError(f"{vocab.Partner} not found")
         return restricted
     return reseller_id
 
@@ -68,9 +69,9 @@ def backorders(db: DB, user: Reader, reseller_id: int | None = None, product_id:
 @router.get("/resellers/{reseller_id}/transactions")
 def reseller_transactions(reseller_id: int, db: DB, user: Reader, location_id: int | None = None,
                           product_id: int | None = None, date_from: date | None = None, date_to: date | None = None):
-    ensure_reseller_access(user, reseller_id, "Dealer")
+    ensure_reseller_access(user, reseller_id, vocab.Partner)
     if db.get(Reseller, reseller_id) is None:
-        raise NotFoundError("Dealer not found")
+        raise NotFoundError(f"{vocab.Partner} not found")
     return _json(service.reseller_history(db, reseller_id, location_id=location_id, product_id=product_id,
                                           date_from=date_from, date_to=date_to,
                                           redact_counterparties=user.is_reseller_user))
@@ -126,7 +127,7 @@ def dealer_sku(db: DB, user: Reader, reseller_id: int | None = None, location_id
 def dealer_sku_xlsx(db: DB, user: Reader, reseller_id: int | None = None, location_id: int | None = None,
                     date_from: date | None = None, date_to: date | None = None):
     report = _dealer_sku(db, user, reseller_id, location_id, date_from, date_to)
-    name = f"{get_settings().file_prefix}-by-dealer-by-SKU-{report['date_from']:%Y%m%d}-{report['date_to']:%Y%m%d}.xlsx"
+    name = f"{get_settings().file_prefix}-by-{vocab.partner}-by-SKU-{report['date_from']:%Y%m%d}-{report['date_to']:%Y%m%d}.xlsx"
     return Response(content=dealer_sku_report.to_xlsx(report),
                     media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})

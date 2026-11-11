@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.db import flush_or_conflict
 from app.core.errors import BusinessRuleError, NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.permissions import ROLE_LABELS, ROLE_PERMISSIONS, Role
 from app.core.security import hash_password, verify_password
 from app.modules.audit.service import record_audit
@@ -95,11 +96,11 @@ def me_out(user: User) -> MeOut:
 def _validate_role_reseller(db: Session, role: Role, reseller_id: int | None) -> None:
     if role == Role.RESELLER:
         if reseller_id is None:
-            raise BusinessRuleError("Dealer users must be linked to a dealer")
+            raise BusinessRuleError(f"{vocab.Partner} users must be linked to {vocab.aPartner}")
         if db.get(Reseller, reseller_id) is None:
-            raise NotFoundError("Dealer not found")
+            raise NotFoundError(f"{vocab.Partner} not found")
     elif reseller_id is not None:
-        raise BusinessRuleError("Only dealer users can be linked to a dealer")
+        raise BusinessRuleError(f"Only {vocab.partner} users can be linked to {vocab.aPartner}")
 
 
 def list_users(db: Session) -> list[User]:

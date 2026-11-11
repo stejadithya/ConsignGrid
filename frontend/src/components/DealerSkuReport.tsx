@@ -11,6 +11,7 @@ import { fmtDate, todayIso } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 import { ResellerSelect } from "./pickers";
 import { Alert, buttonClass, Card, DataTable, Empty, Field, Input, Loading, ProductCell, Qty } from "./ui";
+import { vocab } from "@/lib/terms";
 
 const METRICS = [
   ["on_hand", "On hand"], ["available", "Available"], ["held", "Held"], ["on_the_way", "On the way"],
@@ -36,7 +37,7 @@ export function DealerSkuReport() {
   return (
     <>
       <div className="mb-4 flex flex-wrap items-end gap-3">
-        {staff && <div className="w-72"><Field label="Dealer">{(id) => <ResellerSelect id={id} value={reseller} onChange={setReseller} />}</Field></div>}
+        {staff && <div className="w-72"><Field label={vocab.Partner}>{(id) => <ResellerSelect id={id} value={reseller} onChange={setReseller} />}</Field></div>}
         <div className="w-44"><Field label="Sold from">{(id) => <Input id={id} type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />}</Field></div>
         <div className="w-44"><Field label="to">{(id) => <Input id={id} type="date" value={to} min={from} max={todayIso()} onChange={(e) => setTo(e.target.value)} />}</Field></div>
         <a href={withQuery("/api/reports/dealer-sku.xlsx", query)} download
@@ -61,9 +62,9 @@ export function DealerSkuReport() {
               rowKey={(r) => `${r.location_id}-${r.product_id}`}
               rowClassName={(r) => r.location_id === 0 && "bg-subtle font-semibold"}
               columns={[
-                { key: "s", header: "Shop", value: (r) => `${r.shop} ${r.city ?? ""}`, cell: (r) => r.location_id === 0 ? <b>Total</b>
+                { key: "s", header: vocab.Site, value: (r) => `${r.shop} ${r.city ?? ""}`, cell: (r) => r.location_id === 0 ? <b>Total</b>
                   : <div>{r.shop}<div className="text-caption text-ink-muted">{[r.city, r.location_code].filter(Boolean).join(" · ")}</div></div> },
-                { key: "t", header: "Tyre", value: (r) => `${r.sku} ${r.tyre}`, className: "min-w-56 whitespace-normal",
+                { key: "t", header: vocab.Item, value: (r) => `${r.sku} ${r.tyre}`, className: "min-w-56 whitespace-normal",
                   cell: (r) => r.location_id === 0 ? "" : <ProductCell name={r.tyre} sku={r.sku} /> },
                 ...METRICS.map(([k, label]) => ({ key: k, header: label, align: "right" as const, value: (r: Row) => r[k],
                   cell: (r: Row) => <Qty value={r[k]} tone={k === "not_invoiced" && r[k] ? "warn" : k === "waiting" && r[k] ? "warn" : undefined} /> })),

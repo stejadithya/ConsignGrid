@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, NotFoundError
+from app.core.industry import vocab
 from app.core.permissions import ROLE_LABELS, Role
 from app.modules.audit.service import record_audit
 from app.modules.customers.models import Reseller
@@ -99,10 +100,10 @@ def handover(db: Session, actor: User, from_user_id: int, *, to_user_id: int, re
     if reseller_ids is not None:
         chosen = set(reseller_ids)
         if not chosen:
-            raise BusinessRuleError("Choose at least one dealer to share")
+            raise BusinessRuleError(f"Choose at least one {vocab.partner} to share")
         theirs = {r.id for r in responsibilities(db, leaver).dealers}
         if chosen - theirs:
-            raise BusinessRuleError(f"{leaver.full_name} does not look after all the dealers chosen")
+            raise BusinessRuleError(f"{leaver.full_name} does not look after all the {vocab.partners} chosen")
     if deactivate and leaver.id == actor.id:
         raise BusinessRuleError("You cannot deactivate yourself")
     if deactivate and chosen is not None:
@@ -132,7 +133,7 @@ def handover(db: Session, actor: User, from_user_id: int, *, to_user_id: int, re
                           "replenishment_requests": [r.id for r in moved.replenishments]})
     if moved.dealers:
         names = ", ".join(r.business_name for r in moved.dealers)
-        notify_users(db, [taker.id], f"You now look after {len(moved.dealers)} dealer(s): {names}",
+        notify_users(db, [taker.id], f"You now look after {len(moved.dealers)} {vocab.partner}(s): {names}",
                      f"Handed over by {actor.full_name} from {leaver.full_name}.", link="/resellers", exclude=actor.id)
         if taker.role == Role.SALES_REP:
             for r in moved.dealers:

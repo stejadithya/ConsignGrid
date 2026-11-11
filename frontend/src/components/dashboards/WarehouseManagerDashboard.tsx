@@ -18,6 +18,7 @@ import { Alert, Badge, buttonClass, ButtonLink, Card, DataTable, Loading, Produc
 import { AttentionList, DashboardHeader, JobList, plural, RoleBanner, Section, type AttentionItem } from "./shared";
 import { StockCheckAlerts } from "./StockCheckAlerts";
 import { StockCheckSchedule } from "../StockCheckSchedule";
+import { vocab } from "@/lib/terms";
 
 interface AvailRow { product_id: number; sku: string; product_name: string; on_hand: number; reserved: number; blocked: number;
   available: number; incoming: number; awaiting_supply_demand: number }
@@ -69,7 +70,7 @@ export function WarehouseManagerDashboard() {
 
   return (
     <>
-      <DashboardHeader name={user.full_name} subtitle="Today's jobs in the warehouse: approve, pick and ship, find tyres from dealers, receive supplier stock."
+      <DashboardHeader name={user.full_name} subtitle={`Today's jobs in the warehouse: approve, pick and ship, find ${vocab.items} from ${vocab.partners}, receive supplier stock.`}
         actions={<>
           {can("transfer.request") && <CheckStockButton />}
           {can("catalogue.import") && <a href={EXPORT_URL} download title="Edit or add rows, then use Import from Excel."
@@ -90,18 +91,18 @@ export function WarehouseManagerDashboard() {
             { label: "Incoming", value: sums.incoming.toLocaleString(), href: links.incoming(), hint: "On open purchase orders" },
           ]} />
           <StockCheckAlerts />
-          <StockCheckSchedule title="Stock checks due at dealers" canRecord={can("stocktake.record")} />
+          <StockCheckSchedule title={`Stock checks due at ${vocab.partners}`} canRecord={can("stocktake.record")} />
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
             <Section title="Today's jobs" className="xl:col-span-3" description="Work top to bottom; each line opens the screen to do it">
               <JobList jobs={[
-                { label: "Approve stock requests", value: srs?.pending_approval ?? 0, hint: "Dealers waiting for a decision", href: "/stock-requests/pending", icon: ClipboardCheck },
-                { label: "Pick, pack and ship", value: pickUnits + (srs?.to_ship ?? 0), hint: `${plural(pickUnits, "unit")} to dispatch to ${plural(pickDest, "dealer")} · ${plural(srs?.to_ship ?? 0, "approved request")} to ship`, href: "/replenishment", icon: PackageCheck },
-                { label: "Find tyres from other dealers", value: toFind.length, hint: "\"Get this tyre for me\" and other transfer requests", href: "/transfers", icon: HeartHandshake, urgent: toFind.length > 0 },
+                { label: "Approve stock requests", value: srs?.pending_approval ?? 0, hint: `${vocab.Partners} waiting for a decision`, href: "/stock-requests/pending", icon: ClipboardCheck },
+                { label: "Pick, pack and ship", value: pickUnits + (srs?.to_ship ?? 0), hint: `${plural(pickUnits, "unit")} to dispatch to ${plural(pickDest, vocab.partner, vocab.partners)} · ${plural(srs?.to_ship ?? 0, "approved request")} to ship`, href: "/replenishment", icon: PackageCheck },
+                { label: `Find ${vocab.items} from other ${vocab.partners}`, value: toFind.length, hint: `\"Get this ${vocab.item} for me\" and other transfer requests`, href: "/transfers", icon: HeartHandshake, urgent: toFind.length > 0 },
                 { label: "Collect transfers", value: collections.length, hint: `${inTransitTransfers.length} already on the way`, href: "/transfers", icon: ArrowLeftRight },
-                { label: "Check transfers at the warehouse", value: toCheck.length, hint: "Collected from a dealer, to be received and checked here", href: "/transfers", icon: ArrowLeftRight, urgent: toCheck.length > 0 },
+                { label: "Check transfers at the warehouse", value: toCheck.length, hint: `Collected from ${vocab.aPartner}, to be received and checked here`, href: "/transfers", icon: ArrowLeftRight, urgent: toCheck.length > 0 },
                 { label: "Receive supplier deliveries", value: openPOs.length, hint: latePOs.length ? `${plural(latePOs.length, "order")} overdue · ${poUnits} units outstanding` : `${poUnits} units outstanding`, href: "/purchasing", icon: ClipboardList, urgent: latePOs.length > 0 },
-                { label: "Deliveries on the road", value: deliveriesInTransit.length, hint: "Waiting for the dealer to confirm", href: "/replenishment?tab=deliveries", icon: Truck },
+                { label: "Deliveries on the road", value: deliveriesInTransit.length, hint: `Waiting for the ${vocab.partner} to confirm`, href: "/replenishment?tab=deliveries", icon: Truck },
               ]} />
             </Section>
             <Section title="Attention" className="xl:col-span-2" description="Problems to sort out">
@@ -111,13 +112,13 @@ export function WarehouseManagerDashboard() {
 
           <Section title="Supply and demand">
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-              <Card title="Out of stock with dealers waiting" subtitle="Order or arrange these first" padded={false}
+              <Card title={`Out of stock with ${vocab.partners} waiting`} subtitle="Order or arrange these first" padded={false}
                 actions={<Link className="text-label font-medium text-ink-secondary hover:text-ink" href="/backorders">Backorders</Link>}>
-                <DataTable mobile="cards" label="Tyres in demand" search={false} pageSize={6} rowKey={(r) => r.product_id}
+                <DataTable mobile="cards" label={`${vocab.Items} in demand`} search={false} pageSize={6} rowKey={(r) => r.product_id}
                   rows={avail ? avail.filter((r) => r.awaiting_supply_demand > r.available).sort((a, b) => b.awaiting_supply_demand - a.awaiting_supply_demand) : null}
-                  empty="Every demand can be supplied" emptyHint="Tyres with more demand than warehouse stock appear here."
+                  empty="Every demand can be supplied" emptyHint={`${vocab.Items} with more demand than warehouse stock appear here.`}
                   columns={[
-                    { key: "p", mobile: "primary", header: "Tyre", cell: (r) => <ProductCell name={r.product_name} sku={r.sku} /> },
+                    { key: "p", mobile: "primary", header: vocab.Item, cell: (r) => <ProductCell name={r.product_name} sku={r.sku} /> },
                     { key: "a", mobile: "field", mobileOrder: 1, header: "Available", align: "right", cell: (r) => <NumLink href={links.whereIs(r.product_id)} title="Where is it?"><Qty value={r.available} zeroMuted={false} tone={r.available ? undefined : "danger"} /></NumLink> },
                     { key: "d", mobile: "field", mobileOrder: 2, header: "Waiting", align: "right", cell: (r) => <NumLink href={links.demand(r.product_id)} title="Who is waiting"><Qty value={r.awaiting_supply_demand} tone="warn" /></NumLink> },
                     { key: "i", mobile: "field", mobileOrder: 3, header: "Incoming", align: "right", cell: (r) => <NumLink href={r.incoming ? links.incoming(r.sku) : null}><Qty value={r.incoming} /></NumLink> },

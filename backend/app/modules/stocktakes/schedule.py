@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError, NotFoundError, PermissionDeniedError
+from app.core.industry import vocab
 from app.core.permissions import Role
 from app.modules.audit.service import record_audit
 from app.modules.customers.models import Location, LocationType, Reseller, ResellerStatus
@@ -99,18 +100,18 @@ def _rows(db: Session, today: date, *, reseller_id: int | None = None, location_
 def schedule(db: Session, user: User, *, reseller_id: int | None = None) -> list[ScheduleRow]:
     """Every active dealer shop with its next stock check. Staff only."""
     if user.is_reseller_user:
-        raise PermissionDeniedError("Not available to dealer users")
+        raise PermissionDeniedError(f"Not available to {vocab.partner} users")
     return [row for row, _ in _rows(db, _today(), reseller_id=reseller_id)]
 
 
 def reschedule(db: Session, actor: User, location_id: int, new_date: date, reason: str) -> ScheduleRow:
     """Move a shop's next stock check to a date up to STOCK_CHECK_MOVE_DAYS ahead, with a reason."""
     if actor.is_reseller_user:
-        raise PermissionDeniedError("Not available to dealer users")
+        raise PermissionDeniedError(f"Not available to {vocab.partner} users")
     today, limit = _today(), get_settings().stock_check_move_days
     found = _rows(db, today, location_id=location_id)
     if not found:
-        raise NotFoundError("Shop not found")
+        raise NotFoundError(f"{vocab.Site} not found")
     row, plan = found[0]
     if actor.role == Role.SALES_REP and row.sales_rep_user_id != actor.id:
         raise PermissionDeniedError(f"{row.reseller_name} is looked after by {row.sales_rep_name or 'another rep'}; "
@@ -153,7 +154,7 @@ def send_schedule_reminders(db: Session, today: date | None = None) -> dict:
         where = shop_label(row.reseller_name, row.shop_name)
         if row.status == "DUE" and plan.due_notified_on != today:
             notify_users(db, [row.sales_rep_user_id], f"Stock check due today: {where}",
-                         "Can't do it today? Move it to another day from the dealer's page (up to 14 days ahead).",
+                         f"Can't do it today? Move it to another day from the {vocab.partner}'s page (up to 14 days ahead).",
                          link=f"/stocktakes/new?location={row.location_id}", entity_type="reseller", entity_id=row.reseller_id)
             plan.due_notified_on = today
             due += 1

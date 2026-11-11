@@ -6,6 +6,8 @@ import { api } from "@/lib/api";
 import { useAction, useApi } from "@/lib/hooks";
 import type { Product, SourceOption } from "@/lib/types";
 import { Alert, Button, DataTable, Field, Input, Modal, ProductCell, Qty } from "./ui";
+import { vocab } from "@/lib/terms";
+import { usePublicConfig } from "@/lib/config";
 
 interface Sources { warehouse_available: number; sources: SourceOption[] }
 
@@ -16,6 +18,7 @@ const TYPE_AHEAD_MIN = 3;
 const TYPE_AHEAD_DELAY_MS = 300;
 
 export function CheckStockPanel({ initialProduct }: { initialProduct?: number }) {
+  const searchExample = usePublicConfig()?.industry.search_example ?? "e.g. 700001 or 205 55 16";
   const [text, setText] = useState("");
   const [matches, setMatches] = useState<Product[] | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
@@ -59,17 +62,17 @@ export function CheckStockPanel({ initialProduct }: { initialProduct?: number })
     <div className="space-y-4">
       <form onSubmit={run} className="flex flex-wrap items-end gap-2" role="search">
         <div className="min-w-60 flex-1">
-          <Field label="Tyre" hint="SKU, size, brand or pattern. Matches appear as you type (3 characters or more).">
-            {(id) => <Input id={id} value={text} onChange={(e) => onType(e.target.value)} placeholder="e.g. 700001 or 205 55 16" autoComplete="off" />}
+          <Field label={vocab.Item} hint="SKU, size, brand or pattern. Matches appear as you type (3 characters or more).">
+            {(id) => <Input id={id} value={text} onChange={(e) => onType(e.target.value)} placeholder={searchExample} autoComplete="off" />}
           </Field>
         </div>
         <Button type="submit" variant="primary" disabled={!text.trim() || search.busy}><Search aria-hidden />{search.busy ? "Searching…" : "Search"}</Button>
       </form>
       <Alert>{search.error ?? error}</Alert>
-      {matches && matches.length === 0 && <Alert tone="info">No tyre matches “{text.trim()}”.</Alert>}
+      {matches && matches.length === 0 && <Alert tone="info">No {vocab.item} matches “{text.trim()}”.</Alert>}
       {matches && matches.length > 1 && !product && (
         <div className="overflow-hidden rounded-control border border-line">
-          <div className="border-b border-line bg-subtle px-3 py-2 text-caption font-medium text-ink-secondary">{matches.length} tyres match — pick one</div>
+          <div className="border-b border-line bg-subtle px-3 py-2 text-caption font-medium text-ink-secondary">{matches.length} {vocab.items} match — pick one</div>
           <ul className="max-h-72 divide-y divide-line overflow-y-auto">
             {matches.map((m) => (
               <li key={m.id}>
@@ -89,15 +92,15 @@ export function CheckStockPanel({ initialProduct }: { initialProduct?: number })
               <div className="num text-metric-compact font-semibold"><Qty value={data.warehouse_available} zeroMuted={false} tone={data.warehouse_available ? "ok" : "danger"} /></div>
             </div>
             <div className="rounded-control border border-line p-3">
-              <div className="text-caption text-ink-muted">At dealers · available</div>
+              <div className="text-caption text-ink-muted">At {vocab.partners} · available</div>
               <div className="num text-metric-compact font-semibold">{atDealers}</div>
-              <div className="text-caption text-ink-muted">{data.sources.length} dealer location(s) hold {p?.display_name ?? "it"}</div>
+              <div className="text-caption text-ink-muted">{data.sources.length} {vocab.partner} location(s) hold {p?.display_name ?? "it"}</div>
             </div>
           </div>
-          <DataTable mobile="cards" label="Dealers holding this tyre" search={false} rows={rows} rowKey={(s) => s.location_id}
-            empty="No dealer holds this tyre" emptyHint="Only the warehouse figure above applies."
+          <DataTable mobile="cards" label={`${vocab.Partners} holding this ${vocab.item}`} search={false} rows={rows} rowKey={(s) => s.location_id}
+            empty={`No ${vocab.partner} holds this ${vocab.item}`} emptyHint="Only the warehouse figure above applies."
             columns={[
-              { key: "d", mobile: "primary", header: "Dealer", cell: (s) => <div><div className="font-medium">{s.reseller_name}</div><div className="text-caption text-ink-muted">{s.location_code} · {s.location_name}</div></div> },
+              { key: "d", mobile: "primary", header: vocab.Partner, cell: (s) => <div><div className="font-medium">{s.reseller_name}</div><div className="text-caption text-ink-muted">{s.location_code} · {s.location_name}</div></div> },
               { key: "a", mobile: "field", mobileOrder: 1, header: "Available", align: "right", cell: (s) => <span className="text-body-lg font-semibold"><Qty value={s.available} zeroMuted={false} /></span> },
               { key: "h", mobile: "field", mobileOrder: 2, header: "On hand", align: "right", cell: (s) => <Qty value={s.on_hand} /> },
               { key: "r", header: "Held back", align: "right", cell: (s) => <span title="Reserved or blocked"><Qty value={s.reserved + s.blocked} tone="warn" /></span> },
@@ -105,7 +108,7 @@ export function CheckStockPanel({ initialProduct }: { initialProduct?: number })
                 ? <span className="text-caption text-success">Yes</span>
                 : <span className="text-caption text-ink-muted">{s.ineligible_reason}</span> },
             ]} />
-          <p className="text-caption text-ink-muted">Available = on hand minus reserved and blocked. Dealers never see this list.</p>
+          <p className="text-caption text-ink-muted">Available = on hand minus reserved and blocked. {vocab.Partners} never see this list.</p>
         </>
       )}
     </div>
@@ -118,7 +121,7 @@ export function CheckStockButton({ size = "md" }: { size?: "sm" | "md" }) {
   return (
     <>
       <Button size={size} onClick={() => setOpen(true)}><PackageSearch aria-hidden />Check stock</Button>
-      {open && <Modal open wide title="Check stock" description="Where a tyre is right now: the warehouse and each dealer." onClose={() => setOpen(false)}>
+      {open && <Modal open wide title="Check stock" description={`Where ${vocab.aItem} is right now: the warehouse and each ${vocab.partner}.`} onClose={() => setOpen(false)}>
         <CheckStockPanel />
       </Modal>}
     </>

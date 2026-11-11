@@ -7,6 +7,8 @@ from decimal import Decimal
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
+from app.core.industry import vocab
 from app.core.lookups import Names
 from app.modules.audit.models import AuditEvent
 from app.modules.catalogue.models import Product
@@ -96,8 +98,8 @@ def consignment_stock(db: Session, *, reseller_id: int | None = None, location_i
                                      "locations": len({r["location_id"] for r in rows}),
                                      "resellers": len({r["reseller_id"] for r in rows})},
             "in_transit_total": int(transit),
-            "note": "Unsold dealership-owned stock at dealer locations. Sold stock is excluded; stock in transit "
-                    "is reported separately and not included in location totals."}
+            "note": f"Unsold {get_settings().company_name}-owned stock at {vocab.partner} locations. Sold stock is "
+                    "excluded; stock in transit is reported separately and not included in location totals."}
 
 
 # ---------------------------------------------------------------------------
@@ -261,7 +263,7 @@ def reseller_history(db: Session, reseller_id: int, *, location_id: int | None =
             tr = transfers[t.reference_id]
             def party(rid, lid):
                 if redact_counterparties and rid != reseller_id:
-                    return "Another dealer"
+                    return f"Another {vocab.partner}"
                 return f"{t_names.reseller_name(rid)} ({t_names.loc_code(lid)})"
 
             row["transfer"] = {

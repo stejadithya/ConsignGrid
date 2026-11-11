@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { humanize } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 import type { Transfer } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 type QF = "all" | "REQUESTED" | "APPROVED" | "IN_TRANSIT" | "RECEIVED_WITH_DISCREPANCY";
 
@@ -24,7 +25,7 @@ export default function TransfersPage() {
   return (
     <>
       <PageHeader title="Stock transfers"
-        subtitle="Dealership-controlled movement of unsold consignment stock between dealers. A transfer is not a sale: nobody is invoiced for it, and the supplying dealer is owed replacement stock."
+        subtitle={`Dealership-controlled movement of unsold consignment stock between ${vocab.partners}. A transfer is not a sale: nobody is invoiced for it, and the supplying ${vocab.partner} is owed replacement stock.`}
         actions={can("transfer.request") && <><CheckStockButton /><ButtonLink href="/transfers/new" variant="primary"><Plus aria-hidden />New transfer</ButtonLink></>} />
       <Alert>{error}</Alert>
       {data && status === "open" && (
@@ -33,7 +34,7 @@ export default function TransfersPage() {
           { label: "Approved, to collect", value: count("APPROVED") },
           { label: "In transit", value: count("IN_TRANSIT"), tone: "info" },
           { label: "Discrepancies", value: count("RECEIVED_WITH_DISCREPANCY"), tone: count("RECEIVED_WITH_DISCREPANCY") ? "danger" : "default" },
-          { label: "Replacements owed", value: owed, hint: "Supplying dealers awaiting stock" },
+          { label: "Replacements owed", value: owed, hint: `Supplying ${vocab.partners} awaiting stock` },
         ]} />
       )}
       {status === "open" && (

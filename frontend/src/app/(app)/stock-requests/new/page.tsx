@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth";
 import { humanize } from "@/lib/format";
 import { useAction, useApi } from "@/lib/hooks";
 import type { StockRequestDetail } from "@/lib/types";
+import { vocab } from "@/lib/terms";
 
 interface Row { key: number; product: number | ""; qty: string; notes: string; findForMe: boolean }
 
@@ -71,12 +72,12 @@ function RequestForm({ draft }: { draft: StockRequestDetail | null }) {
     <>
       <PageHeader eyebrow="Consignment" title={draft ? `Edit ${draft.number}` : "Create stock request"}
         subtitle={isReseller
-          ? "Ask for one or more tyres. The Central Team reviews the request; stock is reserved for you once it is approved."
-          : "Request stock on behalf of a dealer. You are recorded as the requester; the Central Team approves before stock is reserved."}
+          ? `Ask for one or more ${vocab.items}. The Central Team reviews the request; stock is reserved for you once it is approved.`
+          : `Request stock on behalf of ${vocab.aPartner}. You are recorded as the requester; the Central Team approves before stock is reserved.`}
         actions={!isReseller && <CheckStockButton />} />
       <Alert>{action.error}</Alert>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Card title="Tyres requested" className="xl:col-span-2" subtitle="One line per SKU. Quantities must be whole numbers greater than zero.">
+        <Card title={`${vocab.Items} requested`} className="xl:col-span-2" subtitle="One line per SKU. Quantities must be whole numbers greater than zero.">
           <div className="space-y-3">
             {rows.map((r, i) => (
               <div key={r.key} className="grid grid-cols-1 gap-2 rounded-control border border-line p-3 sm:grid-cols-[1fr_7rem_auto] sm:items-end">
@@ -101,7 +102,7 @@ function RequestForm({ draft }: { draft: StockRequestDetail | null }) {
 
         <Card title="Request details">
           <div className="space-y-4">
-            <Field label={isReseller ? "Deliver to" : "Dealer location"} required
+            <Field label={isReseller ? "Deliver to" : `${vocab.Partner} location`} required
               hint={draft ? "The location cannot change on an existing request." : undefined}>
               {(id) => <LocationSelect id={id} types={["CONSIGNMENT"]} value={location} onChange={setLocation} disabled={!!draft} required />}
             </Field>

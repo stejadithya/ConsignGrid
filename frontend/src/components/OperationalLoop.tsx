@@ -1,13 +1,14 @@
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RefreshCw, ShoppingCart, Store, Warehouse, type LucideIcon } from "lucide-react";
 import { branding } from "@/config/branding";
 import { cx } from "./ui";
+import { vocab } from "@/lib/terms";
 
 interface Step { icon: LucideIcon; label: string; caption: string; place: string; highlight?: boolean }
 
 // Read clockwise: top-left → top-right → bottom-right → bottom-left, then back up to the start.
 const STEPS: Step[] = [
   { icon: Warehouse, label: "Warehouse", caption: "Stock received", place: "col-start-1 row-start-1" },
-  { icon: Store, label: "Dealer", caption: "On consignment", place: "col-start-3 row-start-1" },
+  { icon: Store, get label() { return vocab.Partner; }, caption: "On consignment", place: "col-start-3 row-start-1" },
   { icon: ShoppingCart, label: "Sale", caption: "Sold to a customer", place: "col-start-3 row-start-3" },
   { icon: RefreshCw, label: "Replenishment", caption: "Raised automatically", place: "col-start-1 row-start-3", highlight: true },
 ];
