@@ -15,6 +15,7 @@ import { useApi } from "@/lib/hooks";
 import type { Product } from "@/lib/types";
 import { branding } from "@/config/branding";
 import { vocab } from "@/lib/terms";
+import { useItemSchema } from "@/lib/config";
 
 interface Demand { product_id: number; awaiting_supply: number; warehouse_available: number }
 interface ConsignmentReport { rows: { product_id: number; on_hand: number }[] }
@@ -25,6 +26,7 @@ export default function ProductsPage() {
   const [active, setActive] = useState("true");
   const [brand, setBrand] = useState("");
   const [size, setSize] = useState("");
+  const schema = useItemSchema();
   const [stock, setStock] = useState("");
   const { data, error, reload } = useApi<Product[]>("/products", { active: active === "" ? undefined : active, limit: 1000 });
   const canStock = can("report.read") && can("inventory.read");
@@ -89,7 +91,7 @@ export default function ProductsPage() {
       {/* The dealer price-list image is hidden: prices are managed in Xero (D2). */}
       {can("catalogue.import") && <p className="mb-3 text-caption text-ink-secondary">Export all SKUs (Excel): edit or add rows, then use Import from Excel.</p>}
       <Card padded={false}>
-        <DataTable rows={rows} rowKey={(p) => p.id} searchPlaceholder="Search SKU, brand, pattern…" mobile="cards" label="Products"
+        <DataTable rows={rows} rowKey={(p) => p.id} searchPlaceholder={`Search SKU, ${schema.brandLabel.toLowerCase()}, ${schema.nameLabel.toLowerCase()}…`} mobile="cards" label="Products"
           onRowClick={(p) => router.push(`/products/${p.id}`)}
           empty={data?.length === 0 && active === "true" && !brand && !size && !stock ? "No products in the catalogue yet" : "No products match"}
           emptyHint={data?.length === 0 && active === "true" ? "Import the product master from Excel using the standard template, or add products one at a time." : "Adjust the filters, or add a product to the catalogue."}
@@ -98,7 +100,7 @@ export default function ProductsPage() {
           onClearFilters={() => { setBrand(""); setSize(""); setStock(""); setActive("true"); }}
           filters={<>
             <FilterField label="Brand" className="w-40"><Select aria-label="Brand filter" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="All brands" options={brands.map((b) => ({ value: b, label: b }))} /></FilterField>
-            <FilterField label="Size" className="w-36"><Input aria-label="Size filter" placeholder="Size e.g. 205/55" value={size} onChange={(e) => setSize(e.target.value)} /></FilterField>
+            <FilterField label={schema.specLabel} className="w-36"><Input aria-label={`${schema.specLabel} filter`} placeholder={schema.tyreFields ? "Size e.g. 205/55" : schema.specLabel} value={size} onChange={(e) => setSize(e.target.value)} /></FilterField>
             {canStock && <FilterField label="Availability" className="w-44"><Select aria-label="Stock filter" value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Any availability"
               options={[{ value: "in", label: "In stock (warehouse)" }, { value: "out", label: "Out of stock" }, { value: "back", label: "Has backorders" }]} /></FilterField>}
             <FilterField label="Status" className="w-36"><Select aria-label="Status filter" value={active} onChange={(e) => setActive(e.target.value)}
@@ -111,8 +113,8 @@ export default function ProductsPage() {
                 <div className="sku text-label text-ink-secondary">{p.sku}</div>
               </div>
             ) },
-            { key: "size", header: "Size", mobile: "secondary", mobileSort: true, value: (p) => p.size_display, cell: (p) => (
-              <div><span className="font-semibold text-ink">{p.size_display}</span><span className="ml-1.5 text-caption text-ink-muted">{p.load_index}{p.speed_rating}</span></div>
+            { key: "size", header: schema.specLabel, mobile: "secondary", mobileSort: true, value: (p) => p.size_display, cell: (p) => (
+              <div><span className="font-semibold text-ink">{p.size_display}</span>{(p.load_index || p.speed_rating) && <span className="ml-1.5 text-caption text-ink-muted">{p.load_index}{p.speed_rating}</span>}</div>
             ) },
             { key: "st", header: "Status", mobile: "status", cell: (p) => <Badge value={p.is_active ? "ACTIVE" : "CLOSED"} label={p.is_active ? "Active" : "Inactive"} /> },
             ...stockCols,

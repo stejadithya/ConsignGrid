@@ -13,11 +13,13 @@ import { useApi } from "@/lib/hooks";
 import type { Balance, Product, ReplenishmentRequest } from "@/lib/types";
 import { ShopLabel } from "@/components/pickers";
 import { vocab } from "@/lib/terms";
+import { formatAttribute, useItemSchema } from "@/lib/config";
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { can } = useAuth();
   const { data: p, error, setData } = useApi<Product>(`/products/${id}`);
+  const schema = useItemSchema();
   const canInv = can("inventory.read");
   const { data: balances } = useApi<Balance[]>(canInv ? "/inventory/balances" : null, { product_id: id });
   const { data: requests } = useApi<ReplenishmentRequest[]>(can("replenishment.read") ? "/replenishment/requests" : null, { product_id: id, open_only: true });
@@ -42,7 +44,7 @@ export default function ProductDetailPage() {
       <Link href="/products" className="mb-3 inline-flex items-center gap-1.5 text-label text-ink-secondary hover:text-ink"><ArrowLeft className="size-3.5" aria-hidden />Products</Link>
       <PageHeader eyebrow={p.brand}
         title={<span className="flex flex-wrap items-center gap-3">{p.pattern} <span className="rounded-md bg-neutral-soft px-2 py-0.5 data text-heading font-semibold">{p.size_display}</span> <Badge value={p.is_active ? "ACTIVE" : "CLOSED"} label={p.is_active ? "Active" : "Inactive"} /></span>}
-        meta={<><span>SKU <span className="sku text-ink">{p.sku}</span></span><span>Load / speed <span className="text-ink">{p.load_index}{p.speed_rating}</span></span>
+        meta={<><span>SKU <span className="sku text-ink">{p.sku}</span></span>{schema.tyreFields && p.load_index && <span>Load / speed <span className="text-ink">{p.load_index}{p.speed_rating}</span></span>}
           {p.barcode && <span>Barcode <span className="sku text-ink">{p.barcode}</span></span>}</>}
         actions={can("catalogue.write") && <Button onClick={() => setEditing(true)}><Pencil aria-hidden />Edit product</Button>} />
 
@@ -90,8 +92,11 @@ export default function ProductDetailPage() {
       {tab === "details" && (
         <Card title="Product details">
           <DefinitionList items={[
-            ["SKU", <span key="s" className="sku">{p.sku}</span>], ["Brand", p.brand], ["Pattern", p.pattern], ["Size", p.size_display],
-            ["Width / aspect / rim", `${p.width} / ${p.aspect_ratio} / ${p.rim_diameter}″`], ["Load index", p.load_index], ["Speed rating", p.speed_rating],
+            ["SKU", <span key="s" className="sku">{p.sku}</span>], [schema.brandLabel, p.brand], [schema.nameLabel, p.pattern],
+            [schema.specLabel, p.size_display || "—"],
+            ...(p.width !== null
+              ? [["Width / aspect / rim", `${p.width} / ${p.aspect_ratio} / ${p.rim_diameter}″`], ["Load index", p.load_index], ["Speed rating", p.speed_rating]] as [string, string | null][]
+              : schema.attributes.map((a) => [a.unit ? `${a.label} (${a.unit})` : a.label, formatAttribute(a, p.attributes?.[a.key])] as [string, string])),
             ["Barcode", p.barcode],
             ["Description", p.description],
           ]} />

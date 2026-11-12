@@ -21,6 +21,9 @@ CK: `role = 'RESELLER'` ⇔ `reseller_id IS NOT NULL`.
 ### products
 `id` · `sku` UQ · `brand` · `pattern` · `width` · `aspect_ratio` · `rim_diameter` numeric(4,1) · `construction` (default R) · `load_index` · `speed_rating` · `description` · `barcode` UQ nullable · `cost_price` · `list_price` · `is_active`.
 CK positive dimensions and non-negative prices. Index on (width, aspect_ratio, rim_diameter) for size search. Size equality never implies interchangeability.
+**0022 (white-label 1.4):** `attributes` jsonb NOT NULL default `{}` (GIN index) holds Industry Pack attributes for
+non-tyre packs; the five tyre columns are nullable (the tyres pack still requires them); CK `tyre_size_complete`
+keeps width / aspect / rim all set or all null.
 
 ### tax_rates
 `id` · `code` UQ · `name` · `rate` (fraction, 0 ≤ rate < 1) · `is_default` (partial unique index: at most one default) · `is_active`.

@@ -102,7 +102,7 @@ def stock_statuses(db: Session, low_threshold: int, skus: list[str] | None = Non
     q = (select(Product, func.coalesce(available.c.available, 0))
          .outerjoin(available, available.c.product_id == Product.id).order_by(Product.sku))
     q = q.where(Product.sku.in_(skus)) if skus is not None else q.where(Product.is_active.is_(True))
-    out = [StockStatus(sku=p.sku, name=f"{p.brand} {p.pattern}", size=f"{p.size_display} {p.load_index}{p.speed_rating}",
+    out = [StockStatus(sku=p.sku, name=f"{p.brand} {p.pattern}", size=p.size_full,
                        status=band(int(avail), low_threshold, p.is_active))
            for p, avail in db.execute(q).all()]
     found = {s.sku for s in out}

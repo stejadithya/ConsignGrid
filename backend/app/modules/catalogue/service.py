@@ -1,6 +1,6 @@
 import re
 
-from sqlalchemy import String, cast, func, or_, select, update
+from sqlalchemy import String, cast, func, literal_column, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.core.db import flush_or_conflict
@@ -31,8 +31,10 @@ def _search_fields():
     rim = func.regexp_replace(cast(Product.rim_diameter, String), r"\.0+$", "")
     size = func.concat(cast(Product.width, String), cast(Product.aspect_ratio, String), Product.construction, rim,
                        " ", Product.load_index, Product.speed_rating)
+    # Attribute values only (not their keys): ["71933215", "4.5 x 30 mm"] for a medical device.
+    attrs = cast(func.jsonb_path_query_array(Product.attributes, literal_column("'$.*'::jsonpath")), String)
     return (Product.sku, Product.brand, Product.pattern, func.coalesce(Product.barcode, ""),
-            func.coalesce(Product.description, ""), size)
+            func.coalesce(Product.description, ""), size, attrs)
 
 
 def list_products(

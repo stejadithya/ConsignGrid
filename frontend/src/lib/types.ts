@@ -30,12 +30,16 @@ export interface Product {
   sku: string;
   brand: string;
   pattern: string;
-  width: number;
-  aspect_ratio: number;
-  rim_diameter: string;
+  /** Tyre columns: set for the tyres Industry Pack, null for the others. */
+  width: number | null;
+  aspect_ratio: number | null;
+  rim_diameter: string | null;
   construction: string;
-  load_index: string;
-  speed_rating: string;
+  load_index: string | null;
+  speed_rating: string | null;
+  /** Industry Pack attributes (non-tyre packs), e.g. { ref: "71933215", sterile: true }. */
+  attributes?: Record<string, string | number | boolean>;
+  /** The short specification: tyre size, or the pack's in-spec attributes. */
   size_display: string;
   display_name: string;
   description: string | null;

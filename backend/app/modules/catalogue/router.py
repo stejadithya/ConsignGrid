@@ -9,9 +9,11 @@ from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.core.errors import BusinessRuleError
+from app.core.industry import current_pack
 from app.core.permissions import P
 from app.modules.audit.service import record_audit
-from app.modules.catalogue import importer, service
+from app.modules.catalogue import generic_import, importer, service
+from app.modules.catalogue import template as tyre_template
 from app.modules.catalogue.models import Product
 from app.modules.catalogue.schemas import (
     ProductCreate,
@@ -20,12 +22,16 @@ from app.modules.catalogue.schemas import (
     TaxRateIn,
     TaxRateOut,
 )
-from app.modules.catalogue.template import build_export, build_template
 from app.modules.identity.deps import DB, has, require
 from app.modules.identity.models import User
 
 router = APIRouter(tags=["catalogue"])
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _tyres() -> bool:
+    """The tyres pack keeps its own importer, template and export; every other pack uses generic_import."""
+    return current_pack().tyre_fields
 
 
 def _out(user: User, product) -> ProductOut:
@@ -61,7 +67,8 @@ def export_products(db: DB, user: Annotated[User, Depends(require(P.CATALOGUE_IM
                  summary=f"Exported {len(products)} product(s) to Excel")
     db.commit()
     name = f"{get_settings().file_prefix}_SKUs_{date.today().isoformat()}.xlsx"
-    return Response(content=build_export(products), media_type=XLSX,
+    content = tyre_template.build_export(products) if _tyres() else generic_import.build_export(products)
+    return Response(content=content, media_type=XLSX,
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
@@ -125,7 +132,8 @@ class ProductImportIn(BaseModel):
 def import_template(_: Importer):
     """The standard blank template every product import uses."""
     name = f"{get_settings().file_prefix}_SKU_Import_Template.xlsx"
-    return Response(content=build_template(), media_type=XLSX,
+    content = tyre_template.build_template() if _tyres() else generic_import.build_template()
+    return Response(content=content, media_type=XLSX,
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
@@ -138,10 +146,11 @@ def import_products(data: ProductImportIn, db: DB, user: Importer):
         raise BusinessRuleError("The uploaded file could not be decoded.") from exc
     if len(content) > MAX_IMPORT_BYTES:
         raise BusinessRuleError("The file is larger than 5 MB. Split it into smaller files.")
-    analysis = importer.analyse(db, content)
+    engine = importer if _tyres() else generic_import
+    analysis = engine.analyse(db, content)
     result = None
     if data.commit:
-        result = importer.apply(db, user, analysis, data.filename)
+        result = engine.apply(db, user, analysis, data.filename)
         db.commit()
     analysis.pop("_results")
     return {"filename": data.filename, "committed": data.commit, "result": result, **analysis}

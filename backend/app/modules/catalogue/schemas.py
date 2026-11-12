@@ -1,17 +1,28 @@
 from decimal import Decimal
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.core.industry import current_pack
+from app.modules.catalogue.attributes import AttributeError_, clean_attributes
+
+TYRE_REQUIRED = (("width", "Width"), ("aspect_ratio", "Aspect ratio"), ("rim_diameter", "Rim diameter"),
+                 ("load_index", "Load index"), ("speed_rating", "Speed rating"))
+TYRE_ONLY = ("width", "aspect_ratio", "rim_diameter", "load_index", "speed_rating")
 
 
 class ProductBase(BaseModel):
     brand: str = Field(min_length=1, max_length=80)
     pattern: str = Field(min_length=1, max_length=120)
-    width: int = Field(gt=0, le=500)
-    aspect_ratio: int = Field(gt=0, le=100)
-    rim_diameter: Decimal = Field(gt=0, le=40, max_digits=4, decimal_places=1)
+    # Tyre columns: required by the tyres Industry Pack, not used by the others (see _check_pack).
+    width: int | None = Field(default=None, gt=0, le=500)
+    aspect_ratio: int | None = Field(default=None, gt=0, le=100)
+    rim_diameter: Decimal | None = Field(default=None, gt=0, le=40, max_digits=4, decimal_places=1)
     construction: str = Field(default="R", min_length=1, max_length=2)
-    load_index: str = Field(min_length=1, max_length=10)
-    speed_rating: str = Field(min_length=1, max_length=3)
+    load_index: str | None = Field(default=None, min_length=1, max_length=10)
+    speed_rating: str | None = Field(default=None, min_length=1, max_length=3)
+    # Industry Pack attributes (non-tyre packs), validated and converted against the pack.
+    attributes: dict[str, Any] = Field(default_factory=dict)
     description: str | None = None
     barcode: str | None = Field(default=None, max_length=50)
     cost_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
@@ -21,8 +32,27 @@ class ProductBase(BaseModel):
 
     @field_validator("speed_rating", "construction")
     @classmethod
-    def _upper(cls, v: str) -> str:
-        return v.strip().upper()
+    def _upper(cls, v: str | None) -> str | None:
+        return v.strip().upper() if v is not None else None
+
+    @model_validator(mode="after")
+    def _check_pack(self):
+        pack = current_pack()
+        if pack.tyre_fields:
+            missing = [label for key, label in TYRE_REQUIRED if getattr(self, key) is None]
+            if missing:
+                raise ValueError(f"Required for a tyre: {', '.join(missing)}")
+            if self.attributes:
+                raise ValueError("Tyres use the size fields, not attributes")
+            return self
+        given = [key for key in TYRE_ONLY if getattr(self, key) is not None]
+        if given:
+            raise ValueError(f"Not used by the {pack.name} pack: {', '.join(given)}")
+        try:
+            self.attributes = clean_attributes(pack, self.attributes)
+        except AttributeError_ as exc:
+            raise ValueError(str(exc)) from exc
+        return self
 
     @field_validator("barcode")
     @classmethod
@@ -50,6 +80,21 @@ class ProductUpdate(BaseModel):
     list_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     rrp: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     is_active: bool | None = None
+    # Replaces the whole set of attributes (non-tyre packs); validated against the pack.
+    attributes: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def _check_attributes(self):
+        if self.attributes is None:
+            return self
+        pack = current_pack()
+        if pack.tyre_fields:
+            raise ValueError("Tyres use the size fields, not attributes")
+        try:
+            self.attributes = clean_attributes(pack, self.attributes)
+        except AttributeError_ as exc:
+            raise ValueError(str(exc)) from exc
+        return self
 
 
 class ProductOut(BaseModel):
@@ -59,12 +104,13 @@ class ProductOut(BaseModel):
     sku: str
     brand: str
     pattern: str
-    width: int
-    aspect_ratio: int
-    rim_diameter: Decimal
+    width: int | None
+    aspect_ratio: int | None
+    rim_diameter: Decimal | None
     construction: str
-    load_index: str
-    speed_rating: str
+    load_index: str | None
+    speed_rating: str | None
+    attributes: dict[str, Any] = Field(default_factory=dict)
     size_display: str
     display_name: str
     description: str | None

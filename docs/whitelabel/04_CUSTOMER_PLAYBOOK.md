@@ -51,7 +51,7 @@ Never use the accent for statuses (green/amber/red keep their operational meanin
 `backend/tests/test_brand_pack.py` fails the build if the previous customer's brand appears anywhere in the
 product's code, assets or file names. Add a new line to that test if a future customer leaves.
 
-## 2. Industry Pack — words available now (Phase 1.2); attributes next (Phase 1.4)
+## 2. Industry Pack — words (Phase 1.2) and item attributes (Phase 1.4)
 
 Set `INDUSTRY_PACK` in `backend/.env`. The words reach every screen (loaded from `GET /api/config/public` when the
 app starts — no frontend rebuild needed), notifications, emails, delivery notes, Excel exports and error messages.
@@ -82,8 +82,38 @@ Same build, `INDUSTRY_PACK=medical` plus a Brand Pack:
 function (module-level constants must use a getter, e.g. `get label() { return vocab.Partners; }`).
 Internal names (tables, API fields, enum values such as `RESELLER`) do not change.
 
-Still tyre-specific until Phase 1.4: product fields (size, load index, speed rating), the product import template
-and size search.
+### Item attributes
+
+Each pack also defines how an item is described. `brand` and the name field exist in every pack (under the pack's
+labels); everything else is a pack attribute, stored in `products.attributes`:
+
+| Pack | Brand label / name label | Attributes (★ required, ◆ shown in the spec) |
+|---|---|---|
+| `tyres` | Brand / Pattern | the original tyre columns: width★◆, aspect ratio★◆, rim★◆, load index★, speed rating★ |
+| `medical` | Manufacturer / Device | REF★◆, Size◆, Class (I–III), Sterile, Tracking |
+| `auto_parts` | Brand / Part name | Category★◆, OEM numbers, Fitment, Warranty (months), Core charge |
+| `building` | Brand / Range | Size★◆, Finish◆, Coverage per box (m²), Shade / batch matters |
+| `industrial` | Manufacturer / Part name | Manufacturer part no.◆, Specification◆, Serialised |
+| `agri` | Brand / Product | Pack size★◆, Registration no., Hazard class |
+| `fmcg` | Brand / Product | Variant◆, Case pack |
+| `furniture` | Collection / Model | Fabric / finish◆, Dimensions |
+| `generic` | Brand / Name | Variant◆ |
+
+What follows the pack automatically: the product form (fields, required marks, dropdowns, help text), product
+detail and list ("Spec" column), search (attribute values are searchable), the Excel template, import and export
+(round-trip), the partner stock API's `size`, and every place that prints an item's name.
+
+**Demo data:** fictional catalogues for three packs are in `backend/data/products/` (`sample-medical-catalogue.xlsx`,
+`sample-auto-parts-catalogue.xlsx`, `sample-building-catalogue.xlsx`); regenerate with
+`python -m scripts.make_sample_catalogue <pack> <file>`.
+
+| Product list (medical) | Product details | New product form |
+|---|---|---|
+| ![list](img/items-medical-list.png) | ![detail](img/items-medical-detail.png) | ![form](img/items-medical-form.png) |
+
+**Adding or changing a pack's attributes** is a code change in `backend/app/core/industry.py` (one line per
+attribute; no migration needed). Choose a pack *before* loading products: switching a live deployment from tyres to
+another pack leaves the existing tyre products as they are.
 
 ## 3. Policy — partly available
 Available as settings today: currency, find window for stock checks, stock-check frequency, request limits,
